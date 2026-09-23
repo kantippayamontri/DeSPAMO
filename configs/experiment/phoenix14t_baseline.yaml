@@ -1,0 +1,18 @@
+seed: 0
+trainer:
+  accelerator: gpu
+  devices: 1
+  precision: bf16
+  default_root_dir: artifacts/phoenix14t_baseline
+  max_epochs: 500
+  accumulate_grad_batches: 2
+  gradient_clip_val: 1.0
+  check_val_every_n_epoch: 2
+optimizer:
+  learning_rate: 6.0e-4
+  weight_decay: 0.01
+evaluation:
+  generation: upstream
+  beam_size: 5
+  expected_test_items: 642
+  output_dir: artifacts/phoenix14t_baseline

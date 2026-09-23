@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "despamo"
+version = "0.1.0"
+description = "Signer-invariant gloss-free sign language translation"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "numpy==1.26.4",
+  "omegaconf==2.3.0",
+  "peft==0.7.1",
+  "pytorch-lightning==1.9.5",
+  "rouge-score==0.1.2",
+  "sacrebleu==2.2.0",
+  "setuptools>=65,<81",
+  "torch==2.0.1",
+  "torchmetrics==1.8.2",
+  "transformers==4.32.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<9",
+  "ruff>=0.11,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/despamo"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "integration: requires local PHOENIX14T data or model artifacts",
+  "gpu: requires CUDA",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

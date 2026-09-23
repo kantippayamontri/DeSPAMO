@@ -1,0 +1,19 @@
+model:
+  name: google/flan-t5-xl
+  cache_dir: ${oc.env:DESPAMO_HF_CACHE}
+  spatial_dim: 2048
+  motion_dim: 1024
+  adapter_dim: 768
+  language_dim: 2048
+  max_text_length: 64
+  max_frame_len: 512
+  spatial_crop_mode: upstream_random
+  prompt: Translate the given sentence into {}.
+  use_in_context: true
+  num_in_context: 3
+  vt_pooling: legacy_mean
+  vt_weight: 1.0
+  warm_up_steps: 0
+  lora_rank: 16
+  lora_alpha: 32
+  lora_dropout: 0.1

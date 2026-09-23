@@ -1,0 +1,8 @@
+data:
+  annotation_root: ${oc.env:PHOENIX14T_ANNOTATION_ROOT}
+  spatial_root: ${oc.env:DESPAMO_FEATURE_ROOT}/vit_feat_Phoenix14T
+  motion_root: ${oc.env:DESPAMO_FEATURE_ROOT}/mae_feat_Phoenix14T
+  spatial_manifest: ${oc.env:DESPAMO_FEATURE_ROOT}/manifests/phoenix14t_spatial.json
+  motion_manifest: ${oc.env:DESPAMO_FEATURE_ROOT}/manifests/phoenix14t_motion.json
+  batch_size: 2
+  num_workers: 0

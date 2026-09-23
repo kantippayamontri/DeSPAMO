@@ -1,0 +1,14 @@
+model:
+  tuning_type: freeze
+  use_in_context: false
+  num_in_context: 0
+  warm_up_steps: null
+trainer:
+  default_root_dir: artifacts/phoenix14t_smoke
+  max_epochs: 1
+  limit_train_batches: 0.01
+  limit_val_batches: 1
+  num_sanity_val_steps: 0
+  accumulate_grad_batches: 1
+  check_val_every_n_epoch: 1
+  log_every_n_steps: 1

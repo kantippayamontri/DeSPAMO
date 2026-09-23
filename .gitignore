@@ -1,0 +1,32 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv/
+
+# Local settings and workflow scratch
+.env
+.env.*
+!.env.example
+.superpowers/sdd/
+
+# Python tooling
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+
+# Models, features, and outputs
+*.ckpt
+*.pt
+*.pth
+*.npy
+*.npz
+artifacts/
+logs/
+outputs/
+configs/local.yaml
