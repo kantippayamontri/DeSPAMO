@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 import torch
@@ -33,17 +34,24 @@ class FlanT5Backbone(nn.Module):
         lora_rank: int,
         lora_alpha: int,
         lora_dropout: float,
+        *,
+        revision: str | None = None,
     ) -> FlanT5Backbone:
         if tuning_type not in {"lora", "freeze"}:
             raise ValueError(f"unsupported tuning_type: {tuning_type}")
+        if revision is not None and not re.fullmatch(r"[0-9a-f]{40}", revision):
+            raise ValueError("immutable 40-hex Flan revision required")
+        pinned = {"revision": revision, "local_files_only": True} if revision is not None else {}
 
         from transformers import AutoTokenizer, T5ForConditionalGeneration
 
         model = T5ForConditionalGeneration.from_pretrained(
-            model_name, cache_dir=cache_dir, torch_dtype=torch.bfloat16
+            model_name, cache_dir=cache_dir, torch_dtype=torch.bfloat16, **pinned
         )
+        if revision is not None and getattr(model.config, "_commit_hash", None) != revision:
+            raise ValueError("Flan revision mismatch in loaded model config")
         tokenizer = AutoTokenizer.from_pretrained(
-            model_name, cache_dir=cache_dir, max_length=max_text_length
+            model_name, cache_dir=cache_dir, max_length=max_text_length, **pinned
         )
         if tuning_type == "lora":
             from peft import LoraConfig, TaskType, get_peft_model

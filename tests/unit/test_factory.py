@@ -185,3 +185,44 @@ def test_build_data_rejects_unannotated_feature_for_split(tmp_path: Path) -> Non
 
     with pytest.raises(ValueError, match=r"unexpected motion feature for dev/extra"):
         build_data(config)
+
+
+def test_comparison_only_passes_immutable_revision_to_loader(monkeypatch):
+    sha = "7d6315df2c2fb742f0f5b556879d730926ca9001"
+    seen = []
+    monkeypatch.setattr(
+        FlanT5Backbone,
+        "from_pretrained",
+        lambda *args, **kwargs: seen.append((args, kwargs)) or DummyLanguageModel(),
+    )
+    config = OmegaConf.create(
+        {
+            "seed": 0,
+            "comparison": {"enabled": True},
+            "model": {
+                "name": "google/flan-t5-xl",
+                "cache_dir": "/cache",
+                "revision": sha,
+                "spatial_dim": 2048,
+                "motion_dim": 1024,
+                "adapter_dim": 768,
+                "language_dim": 2048,
+                "max_text_length": 64,
+                "lora_rank": 16,
+                "lora_alpha": 32,
+                "lora_dropout": 0.1,
+                "vt_pooling": "masked_mean",
+                "vt_weight": 1.0,
+                "warm_up_steps": 0,
+                "prompt": "Translate the given sentence into {}.",
+                "use_in_context": True,
+                "num_in_context": 3,
+            },
+            "optimizer": {"learning_rate": 6e-4, "weight_decay": 0.01},
+        }
+    )
+    build_model(config)
+    assert seen[-1] == (("google/flan-t5-xl", "/cache", 64, "lora", 16, 32, 0.1), {"revision": sha})
+    config.comparison.enabled = False
+    build_model(config)
+    assert seen[-1][1] == {}

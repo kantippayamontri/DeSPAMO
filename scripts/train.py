@@ -13,6 +13,12 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from despamo.comparison import (
+    annotation_hashes,
+    comparison_code_sha256,
+    dino_frame_rows_hash,
+    preflight_run,
+)
 from despamo.config import load_config, validate_baseline_config
 from despamo.evaluation.artifact import collect_runtime_metadata
 from despamo.factory import build_data, build_model
@@ -143,6 +149,11 @@ def main() -> None:
         raise ValueError("--trusted-resume requires --resume")
     config = load_config(args.config, args.override)
     validate_baseline_config(config)
+    comparison = bool(config.get("comparison", {}).get("enabled", False))
+    if comparison and args.resume is not None:
+        raise ValueError("comparison runs must start fresh; --resume forbidden")
+    if comparison:
+        preflight_run(config, args.config, args.override)
     if args.resume is not None and not args.resume.is_file():
         raise FileNotFoundError(f"resume checkpoint must be an existing file: {args.resume}")
     pl.seed_everything(config.seed, workers=True)
@@ -150,6 +161,10 @@ def main() -> None:
     data = build_data(config)
     root = Path(config.trainer.default_root_dir)
     require_ignored_git_output(root, PROJECT_ROOT)
+    if comparison and (root.resolve() == PROJECT_ROOT or PROJECT_ROOT in root.resolve().parents):
+        raise ValueError("comparison artifacts must live outside Git checkout")
+    if comparison and (root / "checkpoints/final.ckpt").exists():
+        raise ValueError("comparison checkpoint already exists; use a new run directory")
     resolved_config = OmegaConf.to_container(config, resolve=True)
     reject_secret_keys(resolved_config)
     metadata = {
@@ -168,6 +183,10 @@ def main() -> None:
             "revision_status": "unresolved",
         },
     }
+    if comparison:
+        metadata["annotation_sha256"] = annotation_hashes(config)
+        metadata["comparison_code_sha256"] = comparison_code_sha256(PROJECT_ROOT)
+        metadata["dino_frame_rows_sha256"] = dino_frame_rows_hash(config)
     snapshot_context = checkpoint_snapshot(args.resume, root) if args.resume else nullcontext(None)
     with snapshot_context as snapshot:
         saved_metadata = None
@@ -198,6 +217,8 @@ def main() -> None:
         try:
             model = build_model(config)
             revision, status = _model_revision(model)
+            if comparison and (status != "resolved" or revision != config.model.revision):
+                raise ValueError("comparison Flan revision mismatch")
             metadata["model_source"].update(revision=revision, revision_status=status)
             if saved_metadata is not None:
                 validate_run_metadata(metadata, saved_metadata)
@@ -218,6 +239,15 @@ def main() -> None:
             trainer.fit(model, datamodule=data)
         else:
             trainer.fit(model, datamodule=data, ckpt_path=str(snapshot))
+        if comparison:
+            if trainer.global_step != config.trainer.max_steps:
+                raise ValueError("comparison stopped before exact optimizer-step budget")
+            target = root / "checkpoints/final.ckpt"
+            require_ignored_git_output(target, PROJECT_ROOT)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            trainer.save_checkpoint(target)
+            if not target.is_file():
+                raise ValueError("comparison trainer did not write final checkpoint")
 
 
 if __name__ == "__main__":

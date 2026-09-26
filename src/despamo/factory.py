@@ -108,6 +108,11 @@ def build_model(config: DictConfig) -> SpaMoBaselineModule:
         config.model.lora_rank,
         config.model.lora_alpha,
         config.model.lora_dropout,
+        **(
+            {"revision": config.model.revision}
+            if config.get("comparison", {}).get("enabled", False)
+            else {}
+        ),
     )
     return SpaMoBaselineModule(
         visual_adapter=SpaMoVisualAdapter(

@@ -273,3 +273,65 @@ def test_from_pretrained_rejects_unknown_tuning_before_loading() -> None:
 
     with pytest.raises(ValueError, match="unsupported tuning_type"):
         backbone.from_pretrained("flan", "/cache", 32, "bad", 16, 32, 0.1)
+
+
+@pytest.mark.parametrize("loaded", ["7d6315df2c2fb742f0f5b556879d730926ca9001", "c" * 40])
+def test_pinned_cached_revision_reaches_model_and_tokenizer_or_fails(monkeypatch, loaded):
+    revision = "7d6315df2c2fb742f0f5b556879d730926ca9001"
+    seen = []
+    transformers = ModuleType("transformers")
+    model = FakeModel()
+    model.config = SimpleNamespace(_commit_hash=loaded)
+
+    class T5:
+        @staticmethod
+        def from_pretrained(name, **kwargs):
+            seen.append(("model", name, kwargs))
+            return model
+
+    class Tokenizer:
+        @staticmethod
+        def from_pretrained(name, **kwargs):
+            seen.append(("tokenizer", name, kwargs))
+            return FakeTokenizer()
+
+    transformers.T5ForConditionalGeneration = T5
+    transformers.AutoTokenizer = Tokenizer
+    monkeypatch.setitem(sys.modules, "transformers", transformers)
+    if loaded != revision:
+        with pytest.raises(ValueError, match="Flan revision mismatch"):
+            FlanT5Backbone.from_pretrained(
+                "flan", "/cache", 32, "freeze", 16, 32, 0.1, revision=revision
+            )
+        assert len(seen) == 1
+    else:
+        FlanT5Backbone.from_pretrained(
+            "flan", "/cache", 32, "freeze", 16, 32, 0.1, revision=revision
+        )
+        assert seen == [
+            (
+                "model",
+                "flan",
+                {
+                    "cache_dir": "/cache",
+                    "torch_dtype": torch.bfloat16,
+                    "revision": revision,
+                    "local_files_only": True,
+                },
+            ),
+            (
+                "tokenizer",
+                "flan",
+                {
+                    "cache_dir": "/cache",
+                    "max_length": 32,
+                    "revision": revision,
+                    "local_files_only": True,
+                },
+            ),
+        ]
+
+
+def test_pinned_loader_rejects_mutable_revision_before_transformers_import():
+    with pytest.raises(ValueError, match="immutable.*revision"):
+        FlanT5Backbone.from_pretrained("flan", "/cache", 32, "freeze", 16, 32, 0.1, revision="main")

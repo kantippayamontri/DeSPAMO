@@ -91,3 +91,31 @@ artifacts match byte-for-byte (SHA-256:
 `4dc0917ae85c3ea7f601e8056a88f4ac68877f13c716261f29cd20c74b7e6f64`).
 Converted checkpoint SHA-256 recorded in evaluation artifacts:
 `44ace3e8536817691f6c6b3104f8881fd65e6e1ac8ff92364a4af16efd93f45f`.
+
+## DINOv3 Spatial Features And Controlled Comparison
+
+The frozen DINOv3 corpus is complete: **8,257 clips / 947,756 frame rows**,
+with zero recorded extraction failures and validated source-to-feature row mapping.
+Extraction uses its own locked environment under `tools/dinov3/`; translation
+continues to use the baseline environment. The baseline consumer test, full
+CLIP/DINO feature preflight, and two-step GPU smokes passed.
+
+Six fresh runs compared CLIP and DINO at 1,000 optimizer steps per source and
+seeds 0, 1, and 2. Each checkpoint was evaluated on the same 642 test clips with
+deterministic beam-5 decoding. Values below are mean ± sample standard deviation:
+
+| Metric | CLIP | DINOv3 | Paired DINO − CLIP |
+|---|---:|---:|---:|
+| BLEU-4 | 4.358 ± 0.094 | 4.558 ± 0.529 | +0.200 ± 0.437 |
+| ROUGE-L F1 | 0.11515 ± 0.00121 | 0.12609 ± 0.01556 | +0.01094 ± 0.01677 |
+
+**Quality limitation:** all six short-budget checkpoints produce many repeated,
+generic weather sentences. DINO seed 2 emits one identical sentence for 627 of
+642 inputs. The small mean advantage does not establish robust improvement;
+these checkpoints are not accepted as converged translation models or strong
+starting points for claims about factor supervision. The released SpaMo result
+above is a separate, longer-trained baseline.
+
+See [DINO milestone and runbook](docs/dinov3-milestone.md) for exact model/feature
+identities, per-seed results, prediction audit, external artifact locations,
+reproduction commands, and remaining research gates.

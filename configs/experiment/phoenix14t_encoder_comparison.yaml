@@ -1,0 +1,17 @@
+trainer:
+  default_root_dir: ${oc.env:COMPARISON_RUN_DIR}
+  max_epochs: -1
+  max_steps: 1000
+model:
+  vt_pooling: masked_mean
+  spatial_crop_mode: full
+  revision: 7d6315df2c2fb742f0f5b556879d730926ca9001
+evaluation:
+  generation: deterministic
+comparison:
+  enabled: true
+  smoke: false
+  clip_root: ${oc.env:DESPAMO_FEATURE_ROOT}/vit_feat_Phoenix14T
+  clip_manifest: ${oc.env:DESPAMO_FEATURE_ROOT}/manifests/phoenix14t_spatial.json
+  dino_root: ${oc.env:DINO_ROOT}
+  dino_manifest: ${oc.env:DINO_ROOT}/complete/manifest.json

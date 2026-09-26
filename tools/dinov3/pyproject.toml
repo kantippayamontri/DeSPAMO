@@ -1,0 +1,20 @@
+[project]
+name = "despamo-dinov3-extractor"
+version = "0.1.0"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "transformers==4.56.2",
+  "torch==2.5.1+cu121",
+  "pillow==11.3.0",
+  "numpy==1.26.4",
+  "huggingface-hub==0.35.3",
+  "pytest==8.4.2",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu121" }

@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 import torch
 from omegaconf import OmegaConf
@@ -150,6 +151,113 @@ def _fixture(
         checkpoint,
     )
     return config, checkpoint, clip_ids, models, captured
+
+
+def _mark_converted_released(checkpoint):
+    torch.save(
+        {
+            "state_dict": FakeModel().state_dict(),
+            "metadata": {
+                "source_path": "spamo.ckpt",
+                "source_sha256": "06a432cdd8e1da4ce0b0e4cff246b20ad7d6a60406f32dfdbdfd974f94d3eee6",
+                "target_schema_sha256": "b" * 64,
+                "source_tensor_count": 871,
+                "target_tensor_count": 871,
+            },
+        },
+        checkpoint,
+    )
+
+
+def _comparison_fixture(tmp_path, monkeypatch, script):
+    import despamo.comparison as comparison
+    from despamo.comparison import annotation_hashes, comparison_code_sha256
+    from despamo.utils.hashing import sha256_file
+
+    config, checkpoint, _, models, captured = _fixture(tmp_path, monkeypatch, script)
+    ann = tmp_path / "annotations"
+    ann.mkdir()
+    for split in ("train", "dev", "test"):
+        np.save(
+            ann / f"{split}_info_ml.npy",
+            {0: {"fileid": f"{split}-id", "num_frames": 5, "text": "original"}},
+        )
+    config.data.annotation_root = str(ann)
+    config.data.batch_size = 2
+    config.data.spatial_root = str(tmp_path / "clip")
+    config.model.spatial_crop_mode = "full"
+    config.model.name = "google/flan-t5-xl"
+    config.model.revision = "7d6315df2c2fb742f0f5b556879d730926ca9001"
+    config.model.vt_pooling = "masked_mean"
+    config.model.prompt = "Translate the given sentence into {}."
+    config.model.vt_weight = 1.0
+    config.model.use_in_context = True
+    config.model.num_in_context = 3
+    config.model.warm_up_steps = 0
+    config.model.lora_rank = 16
+    config.model.lora_alpha = 32
+    config.model.lora_dropout = 0.1
+    config.model.spatial_dim = 2048
+    config.model.motion_dim = 1024
+    config.evaluation.generation = "deterministic"
+    config.comparison = {
+        "enabled": True,
+        "smoke": False,
+        "clip_root": config.data.spatial_root,
+        "clip_manifest": config.data.spatial_manifest,
+        "dino_root": str(tmp_path / "dino"),
+        "dino_manifest": str(tmp_path / "dino/complete/manifest.json"),
+    }
+    config.trainer = {
+        "max_steps": 1000,
+        "max_epochs": -1,
+        "accumulate_grad_batches": 2,
+        "precision": "bf16",
+    }
+    config.optimizer = {"learning_rate": 6e-4, "weight_decay": 0.01}
+    for modality in ("spatial", "motion"):
+        Path(config.data[f"{modality}_manifest"]).write_text(modality)
+    saved = {
+        "seed": config.seed,
+        "config": OmegaConf.to_container(config, resolve=True),
+        "resume_reproducibility": "fresh",
+        "spatial_manifest_sha256": sha256_file(Path(config.data.spatial_manifest)),
+        "motion_manifest_sha256": sha256_file(Path(config.data.motion_manifest)),
+        "annotation_sha256": annotation_hashes(config),
+        "comparison_code_sha256": comparison_code_sha256(script.PROJECT_ROOT),
+        "dino_frame_rows_sha256": "e" * 64,
+        "model_source": {
+            "identifier": "google/flan-t5-xl",
+            "tuning_type": "lora",
+            "revision_status": "resolved",
+            "revision": config.model.revision,
+        },
+    }
+    torch.save(
+        {
+            "pytorch-lightning_version": "1.9.5",
+            "global_step": 1000,
+            "state_dict": FakeModel().state_dict(),
+            "run_metadata": saved,
+            "optimizer_states": [
+                {
+                    "state": {
+                        0: {
+                            "step": torch.tensor(1000.0),
+                            "exp_avg": torch.ones(1),
+                            "exp_avg_sq": torch.ones(1),
+                        }
+                    },
+                    "param_groups": [{"params": [0]}],
+                }
+            ],
+            "lr_schedulers": [{"last_epoch": 1000}],
+        },
+        checkpoint,
+    )
+    monkeypatch.setattr(comparison, "validate_dino_content", lambda config: "e" * 64, raising=False)
+    monkeypatch.setattr(script, "validate_dino_content", lambda config: "e" * 64, raising=False)
+    return config, checkpoint, ann, saved, models, captured
 
 
 @pytest.mark.parametrize("mutation", ["replace", "in_place"])
@@ -757,6 +865,13 @@ def test_cpu_fake_requires_strict_checkpoint_state(tmp_path, monkeypatch, state)
 def test_cpu_fake_rejects_upstream_metrics_before_writing_success_artifact(tmp_path, monkeypatch):
     script = _script()
     config, checkpoint, _, _, _ = _fixture(tmp_path, monkeypatch, script)
+    _mark_converted_released(checkpoint)
+    monkeypatch.setattr(
+        script,
+        "RELEASED_CONVERTED_SHA256",
+        hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
+        raising=False,
+    )
     monkeypatch.setattr(
         script,
         "evaluate_translations",
@@ -793,6 +908,13 @@ def test_upstream_research_score_writes_artifact_without_claiming_acceptance(tmp
 def test_explicit_baseline_acceptance_records_only_valid_upstream_result(tmp_path, monkeypatch):
     script = _script()
     config, checkpoint, _, _, _ = _fixture(tmp_path, monkeypatch, script)
+    _mark_converted_released(checkpoint)
+    monkeypatch.setattr(
+        script,
+        "RELEASED_CONVERTED_SHA256",
+        hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
+        raising=False,
+    )
     output = tmp_path / "accepted.json"
 
     metrics = script.evaluate(
@@ -1039,3 +1161,243 @@ def test_cli_without_cuda_fails_explicitly_before_weight_loading(tmp_path, monke
         script.main()
 
     assert not (tmp_path / "result.json").exists()
+
+
+def test_comparison_rejects_baseline_acceptance_even_with_upstream(tmp_path, monkeypatch):
+    script = _script()
+    config, checkpoint, _, _, _ = _fixture(tmp_path, monkeypatch, script)
+    config.comparison = {"enabled": True, "smoke": False}
+    monkeypatch.setattr(script, "build_data", lambda config: pytest.fail("data built"))
+    with pytest.raises(ValueError, match="released SpaMo"):
+        script.evaluate(
+            config,
+            checkpoint,
+            "upstream",
+            tmp_path / "result.json",
+            device="cpu",
+            accept_baseline=True,
+        )
+
+
+def test_comparison_rejects_incomplete_checkpoint_before_model(tmp_path, monkeypatch):
+    script = _script()
+    config, checkpoint, _, _, _ = _fixture(tmp_path, monkeypatch, script)
+    config.comparison = {"enabled": True, "smoke": False}
+    config.trainer = {"max_steps": 1000}
+    config.evaluation.generation = "deterministic"
+    monkeypatch.setattr(script, "build_model", lambda config: pytest.fail("model built"))
+    with pytest.raises(ValueError, match="comparison.*step"):
+        script.evaluate(config, checkpoint, "deterministic", tmp_path / "result.json", device="cpu")
+
+
+def test_baseline_acceptance_rejects_other_converted_source(tmp_path, monkeypatch):
+    script = _script()
+    config, checkpoint, _, _, _ = _fixture(tmp_path, monkeypatch, script)
+    _mark_converted_released(checkpoint)
+    content = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    content["metadata"]["source_sha256"] = "c" * 64
+    torch.save(content, checkpoint)
+    monkeypatch.setattr(
+        script,
+        "RELEASED_CONVERTED_SHA256",
+        hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
+        raising=False,
+    )
+    monkeypatch.setattr(script, "build_model", lambda config: pytest.fail("model built"))
+    with pytest.raises(ValueError, match="converted released SpaMo"):
+        script.evaluate(
+            config,
+            checkpoint,
+            "upstream",
+            tmp_path / "result.json",
+            device="cpu",
+            accept_baseline=True,
+        )
+
+
+def test_evaluation_cli_applies_seed_override_to_same_layers(tmp_path, monkeypatch):
+    script = _script()
+    common_path = tmp_path / "comparison.yaml"
+    common_path.write_text(
+        "seed: 0\nmodel:\n  spatial_dim: 2048\n  motion_dim: 1024\n"
+        "trainer:\n  default_root_dir: ${oc.env:COMPARISON_RUN_DIR}\n"
+    )
+    source_path = tmp_path / "dino.yaml"
+    source_path.write_text("data:\n  spatial_root: dino\n")
+    monkeypatch.setenv("COMPARISON_RUN_DIR", str(tmp_path / "dino/seed-2"))
+    monkeypatch.setattr(script.torch.cuda, "is_available", lambda: True)
+    seen = []
+    monkeypatch.setattr(
+        script,
+        "evaluate",
+        lambda config, *args, **kwargs: (
+            seen.append((config.seed, config.trainer.default_root_dir, config.data.spatial_root))
+            or {"bleu4": 1.0}
+        ),
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "evaluate.py",
+            "--config",
+            str(common_path),
+            "--config",
+            str(source_path),
+            "--checkpoint",
+            str(tmp_path / "model.ckpt"),
+            "--generation",
+            "deterministic",
+            "--output",
+            str(tmp_path / "test.json"),
+            "seed=2",
+        ],
+    )
+    script.main()
+    assert seen == [(2, str(tmp_path / "dino/seed-2"), "dino")]
+
+
+def test_comparison_text_only_annotation_drift_blocks_score_and_artifact(tmp_path, monkeypatch):
+    script = _script()
+    config, checkpoint, ann, saved, _, _ = _comparison_fixture(tmp_path, monkeypatch, script)
+    accepted = tmp_path / "matched.json"
+    script.evaluate(config, checkpoint, "deterministic", accepted, device="cpu")
+    result_metadata = json.loads(accepted.read_text())["metadata"]
+    assert result_metadata["comparison_source"] == "clip"
+    assert result_metadata["checkpoint_global_step"] == 1000
+    assert result_metadata["annotation_sha256"] == saved["annotation_sha256"]
+    assert result_metadata["comparison_code_sha256"] == saved["comparison_code_sha256"]
+    assert result_metadata["baseline_accepted"] is False
+    raw = np.load(ann / "train_info_ml.npy", allow_pickle=True).item()
+    raw[0]["text"] = "changed text without changing clip ID or num_frames"
+    np.save(ann / "train_info_ml.npy", raw)
+    monkeypatch.setattr(script, "build_model", lambda config: pytest.fail("model built"))
+    monkeypatch.setattr(
+        script, "evaluate_translations", lambda *args: pytest.fail("score calculated")
+    )
+    monkeypatch.setattr(
+        script, "write_result_artifact", lambda *args: pytest.fail("result recorded")
+    )
+    output = tmp_path / "drifted.json"
+    with pytest.raises(ValueError, match="annotation SHA256 mismatch"):
+        script.evaluate(config, checkpoint, "deterministic", output, device="cpu")
+    assert not output.exists()
+
+
+def test_comparison_rejects_conflicting_metadata_before_model(tmp_path, monkeypatch):
+    script = _script()
+    config, checkpoint, _, saved, _, _ = _comparison_fixture(tmp_path, monkeypatch, script)
+    content = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    content["metadata"] = {"annotation_sha256": saved["annotation_sha256"], "seed": 999}
+    torch.save(content, checkpoint)
+    monkeypatch.setattr(script, "build_model", lambda config: pytest.fail("model built"))
+    output = tmp_path / "conflict.json"
+    with pytest.raises(ValueError, match="comparison.*conflicting.*metadata"):
+        script.evaluate(config, checkpoint, "deterministic", output, device="cpu")
+    assert not output.exists()
+
+
+def test_comparison_code_drift_rejects_before_model(tmp_path, monkeypatch):
+    script = _script()
+    config, checkpoint, _, _, _, _ = _comparison_fixture(tmp_path, monkeypatch, script)
+    content = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    content["run_metadata"]["comparison_code_sha256"] = "a" * 64
+    torch.save(content, checkpoint)
+    monkeypatch.setattr(script, "build_model", lambda config: pytest.fail("model built"))
+    output = tmp_path / "code-drift.json"
+    with pytest.raises(ValueError, match="comparison code SHA256 mismatch"):
+        script.evaluate(config, checkpoint, "deterministic", output, device="cpu")
+    assert not output.exists()
+
+
+def test_comparison_rechecks_code_before_artifact_write(tmp_path, monkeypatch):
+    script = _script()
+    config, checkpoint, _, _, _, _ = _comparison_fixture(tmp_path, monkeypatch, script)
+    monkeypatch.setattr(script, "comparison_code_sha256", lambda root: "0" * 64)
+    monkeypatch.setattr(
+        script, "write_result_artifact", lambda *args: pytest.fail("artifact written")
+    )
+    output = tmp_path / "code-drift-after-model.json"
+    with pytest.raises(ValueError, match="comparison code SHA256 mismatch before result write"):
+        script.evaluate(config, checkpoint, "deterministic", output, device="cpu")
+    assert not output.exists()
+
+
+def test_comparison_state_dict_only_is_rejected_before_model(tmp_path, monkeypatch):
+    script = _script()
+    config, checkpoint, _, _, _, _ = _comparison_fixture(tmp_path, monkeypatch, script)
+    content = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    for field in ("pytorch-lightning_version", "optimizer_states", "lr_schedulers"):
+        del content[field]
+    torch.save(content, checkpoint)
+    monkeypatch.setattr(script, "build_model", lambda config: pytest.fail("model built"))
+    with pytest.raises(ValueError, match="comparison.*Lightning"):
+        script.evaluate(
+            config, checkpoint, "deterministic", tmp_path / "invalid.json", device="cpu"
+        )
+
+
+def test_comparison_protocol_violation_blocks_model_even_with_matching_saved_config(
+    tmp_path, monkeypatch
+):
+    script = _script()
+    config, checkpoint, _, _, _, _ = _comparison_fixture(tmp_path, monkeypatch, script)
+    config.model.vt_pooling = "legacy_mean"
+    content = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    content["run_metadata"]["config"] = OmegaConf.to_container(config, resolve=True)
+    torch.save(content, checkpoint)
+    monkeypatch.setattr(script, "build_model", lambda config: pytest.fail("model built"))
+    with pytest.raises(ValueError, match="comparison protocol mismatch"):
+        script.evaluate(
+            config, checkpoint, "deterministic", tmp_path / "invalid.json", device="cpu"
+        )
+
+
+def test_comparison_rechecks_annotation_bytes_after_inference(tmp_path, monkeypatch):
+    script = _script()
+    config, checkpoint, ann, _, _, _ = _comparison_fixture(tmp_path, monkeypatch, script)
+    original_generate = FakeLanguageModel.generate_text
+    changed = False
+
+    def mutate_after_preflight(self, *args):
+        nonlocal changed
+        if not changed:
+            changed = True
+            path = ann / "test_info_ml.npy"
+            raw = np.load(path, allow_pickle=True).item()
+            raw[0]["text"] = "changed after checkpoint validation"
+            np.save(path, raw)
+        return original_generate(self, *args)
+
+    monkeypatch.setattr(FakeLanguageModel, "generate_text", mutate_after_preflight)
+    output = tmp_path / "drifted-after-inference.json"
+    with pytest.raises(ValueError, match="annotation SHA256 mismatch before result write"):
+        script.evaluate(config, checkpoint, "deterministic", output, device="cpu")
+    assert changed and not output.exists()
+
+
+def test_comparison_rechecks_dino_content_before_artifact_write(tmp_path, monkeypatch):
+    script = _script()
+    config, checkpoint, _, _, _, _ = _comparison_fixture(tmp_path, monkeypatch, script)
+    calls = []
+
+    def content_hash(config):
+        calls.append(config)
+        return "f" * 64
+
+    monkeypatch.setattr(script, "validate_dino_content", content_hash, raising=False)
+    output = tmp_path / "content-drift.json"
+    with pytest.raises(ValueError, match="DINO content SHA256 mismatch before result write"):
+        script.evaluate(config, checkpoint, "deterministic", output, device="cpu")
+    assert len(calls) == 1 and not output.exists()
+
+
+def test_forged_released_source_metadata_cannot_claim_baseline_acceptance(tmp_path, monkeypatch):
+    script = _script()
+    config, checkpoint, _, _, _ = _fixture(tmp_path, monkeypatch, script)
+    _mark_converted_released(checkpoint)
+    monkeypatch.setattr(script, "build_model", lambda config: pytest.fail("model built"))
+    output = tmp_path / "forged.json"
+    with pytest.raises(ValueError, match="converted released SpaMo.*SHA256"):
+        script.evaluate(config, checkpoint, "upstream", output, device="cpu", accept_baseline=True)
+    assert not output.exists()

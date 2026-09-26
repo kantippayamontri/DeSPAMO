@@ -15,6 +15,8 @@ from despamo.data.manifest import FeatureManifest, FeatureRecord
 from despamo.models.flan_t5 import FlanT5Backbone
 from despamo.utils.hashing import sha256_file
 
+FLAN_SHA = "7d6315df2c2fb742f0f5b556879d730926ca9001"
+
 
 def _train_script():
     path = Path(__file__).resolve().parents[2] / "scripts/train.py"
@@ -69,6 +71,7 @@ def _fake_run(tmp_path, monkeypatch, *, root=None, revision=None, extra_config=N
     monkeypatch.setattr(train.pl, "Trainer", FakeTrainer)
     monkeypatch.setattr(train, "build_data", fake_data)
     monkeypatch.setattr(train, "build_model", fake_model)
+    monkeypatch.setattr(train, "dino_frame_rows_hash", lambda config: "e" * 64, raising=False)
     return train, root, config_path, model, events
 
 
@@ -1052,3 +1055,322 @@ def test_train_cli_preflights_second_clip_before_loading_weights(
         assert "float64" in str(error.value)
     if case == "length":
         assert "(2, 2048)" in str(error.value)
+
+
+def _fake_annotation_root(config_path, tmp_path):
+    ann = tmp_path / "ann"
+    ann.mkdir()
+    for split in ("train", "dev", "test"):
+        np.save(
+            ann / f"{split}_info_ml.npy",
+            {0: {"fileid": split, "num_frames": 5, "text": "original text"}},
+        )
+    config = OmegaConf.load(config_path)
+    config.data.annotation_root = str(ann)
+    OmegaConf.save(config, config_path)
+    return ann
+
+
+def test_comparison_preflight_stops_before_model_and_training(tmp_path, monkeypatch):
+    root = tmp_path / "run"
+    train, _, config_path, _, events = _fake_run(
+        tmp_path,
+        monkeypatch,
+        root=root,
+        extra_config={
+            "comparison": {"enabled": True, "smoke": True},
+            "trainer": {"default_root_dir": str(root), "max_steps": 1},
+        },
+    )
+    monkeypatch.setattr(
+        train,
+        "preflight_run",
+        lambda config, paths, overrides: (_ for _ in ()).throw(
+            ValueError("DINO complete manifest missing")
+        ),
+    )
+    monkeypatch.setattr(sys, "argv", ["train.py", "--config", str(config_path)])
+    with pytest.raises(ValueError, match="DINO complete manifest missing"):
+        train.main()
+    assert "model" not in events
+    assert not (root / "run_metadata.json").exists()
+
+
+def test_train_cli_rejects_dino_overridden_to_clip_before_model(tmp_path, monkeypatch):
+    train = _train_script()
+    configs = Path(__file__).resolve().parents[2] / "configs"
+    feature_root = tmp_path / "features"
+    monkeypatch.setenv("PHOENIX14T_ANNOTATION_ROOT", str(tmp_path / "ann"))
+    monkeypatch.setenv("DESPAMO_FEATURE_ROOT", str(feature_root))
+    monkeypatch.setenv("DESPAMO_HF_CACHE", str(tmp_path / "cache"))
+    monkeypatch.setenv("DINO_ROOT", str(tmp_path / "dino-key"))
+    monkeypatch.setenv("COMPARISON_RUN_DIR", str(tmp_path / "run"))
+    layers = [
+        configs / "data/phoenix14t.yaml",
+        configs / "model/spamo_flan_t5_xl.yaml",
+        configs / "experiment/phoenix14t_baseline.yaml",
+        configs / "experiment/phoenix14t_encoder_comparison.yaml",
+        configs / "experiment/phoenix14t_dinov3.yaml",
+    ]
+    spatial = feature_root / "manifests/phoenix14t_spatial.json"
+    monkeypatch.setattr(
+        "despamo.comparison.preflight_sources",
+        lambda config: pytest.fail("feature I/O started before binding"),
+    )
+    monkeypatch.setattr(train, "build_data", lambda config: pytest.fail("data built"))
+    monkeypatch.setattr(train, "build_model", lambda config: pytest.fail("model built"))
+    monkeypatch.setattr(train.pl, "Trainer", lambda **kwargs: pytest.fail("trainer built"))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "train.py",
+            *(part for path in layers for part in ("--config", str(path))),
+            f"data.spatial_root={feature_root / 'vit_feat_Phoenix14T'}",
+            f"data.spatial_manifest={spatial}",
+        ],
+    )
+    with pytest.raises(ValueError, match="dino spatial source binding"):
+        train.main()
+    assert not (tmp_path / "run/run_metadata.json").exists()
+
+
+def test_comparison_saves_only_exact_step_checkpoint(tmp_path, monkeypatch):
+    root = tmp_path / "run"
+    train, _, config_path, model, _ = _fake_run(
+        tmp_path,
+        monkeypatch,
+        root=root,
+        revision=FLAN_SHA,
+        extra_config={
+            "comparison": {"enabled": True, "smoke": True},
+            "trainer": {"default_root_dir": str(root), "max_steps": 1},
+            "model": {
+                "spatial_dim": 2048,
+                "motion_dim": 1024,
+                "name": "google/flan-t5-xl",
+                "revision": FLAN_SHA,
+            },
+        },
+    )
+    ann = _fake_annotation_root(config_path, tmp_path)
+    monkeypatch.setattr(train, "preflight_run", lambda config, paths, overrides: {})
+    saved = []
+
+    class FakeTrainer:
+        global_step = 1
+
+        def __init__(self, **kwargs):
+            assert kwargs["max_steps"] == 1
+
+        def fit(self, model, *, datamodule):
+            pass
+
+        def save_checkpoint(self, path):
+            saved.append(Path(path))
+            Path(path).write_bytes(b"fake full-state checkpoint")
+
+    monkeypatch.setattr(train.pl, "Trainer", FakeTrainer)
+    monkeypatch.setattr(sys, "argv", ["train.py", "--config", str(config_path)])
+    train.main()
+    assert saved == [root / "checkpoints/final.ckpt"]
+    assert saved[0].read_bytes() == b"fake full-state checkpoint"
+    assert model.run_metadata["annotation_sha256"] == {
+        split: sha256_file(ann / f"{split}_info_ml.npy") for split in ("train", "dev", "test")
+    }
+    from despamo.comparison import comparison_code_sha256
+
+    assert model.run_metadata["comparison_code_sha256"] == comparison_code_sha256(
+        train.PROJECT_ROOT
+    )
+    assert model.run_metadata["dino_frame_rows_sha256"] == "e" * 64
+
+
+def test_comparison_rejects_wrong_resolved_flan_before_fit(tmp_path, monkeypatch):
+    root = tmp_path / "run"
+    train, _, config_path, _, events = _fake_run(
+        tmp_path,
+        monkeypatch,
+        root=root,
+        revision="c" * 40,
+        extra_config={
+            "comparison": {"enabled": True, "smoke": True},
+            "trainer": {"default_root_dir": str(root), "max_steps": 1},
+            "model": {
+                "spatial_dim": 2048,
+                "motion_dim": 1024,
+                "name": "google/flan-t5-xl",
+                "revision": FLAN_SHA,
+            },
+        },
+    )
+    _fake_annotation_root(config_path, tmp_path)
+    monkeypatch.setattr(train, "preflight_run", lambda config, paths, overrides: {})
+    monkeypatch.setattr(sys, "argv", ["train.py", "--config", str(config_path)])
+    with pytest.raises(ValueError, match="comparison Flan revision mismatch"):
+        train.main()
+    assert not (root / "run_metadata.json").exists()
+    assert not any(isinstance(event, tuple) and event[0] == "fit" for event in events)
+
+
+def test_baseline_train_does_not_hash_annotations_or_add_metadata(tmp_path, monkeypatch):
+    train, root, config_path, _, _ = _fake_run(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        train, "annotation_hashes", lambda config: pytest.fail("baseline hashed annotations")
+    )
+    monkeypatch.setattr(
+        train, "comparison_code_sha256", lambda root: pytest.fail("baseline hashed code")
+    )
+    monkeypatch.setattr(sys, "argv", ["train.py", "--config", str(config_path)])
+    train.main()
+    assert "annotation_sha256" not in json.loads((root / "run_metadata.json").read_text())
+    assert "comparison_code_sha256" not in json.loads((root / "run_metadata.json").read_text())
+
+
+def test_comparison_rejects_resume_before_preflight_and_model(tmp_path, monkeypatch):
+    root = tmp_path / "run"
+    train, _, config_path, _, events = _fake_run(
+        tmp_path,
+        monkeypatch,
+        root=root,
+        extra_config={"comparison": {"enabled": True, "smoke": True}},
+    )
+    monkeypatch.setattr(train, "preflight_run", lambda *args: pytest.fail("preflight started"))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "train.py",
+            "--config",
+            str(config_path),
+            "--resume",
+            str(tmp_path / "missing.ckpt"),
+            "--trusted-resume",
+        ],
+    )
+    with pytest.raises(ValueError, match="--resume forbidden"):
+        train.main()
+    assert not events
+    assert not (root / "run_metadata.json").exists()
+
+
+def test_comparison_stopped_early_never_saves_final_checkpoint(tmp_path, monkeypatch):
+    root = tmp_path / "run"
+    train, _, config_path, _, _ = _fake_run(
+        tmp_path,
+        monkeypatch,
+        root=root,
+        revision=FLAN_SHA,
+        extra_config={
+            "comparison": {"enabled": True, "smoke": True},
+            "trainer": {"default_root_dir": str(root), "max_steps": 1},
+            "model": {
+                "spatial_dim": 2048,
+                "motion_dim": 1024,
+                "name": "google/flan-t5-xl",
+                "revision": FLAN_SHA,
+            },
+        },
+    )
+    _fake_annotation_root(config_path, tmp_path)
+    monkeypatch.setattr(train, "preflight_run", lambda *args: {})
+
+    class StoppedTrainer:
+        global_step = 0
+
+        def __init__(self, **kwargs):
+            pass
+
+        def fit(self, model, *, datamodule):
+            pass
+
+        def save_checkpoint(self, path):
+            pytest.fail("saved incomplete checkpoint")
+
+    monkeypatch.setattr(train.pl, "Trainer", StoppedTrainer)
+    monkeypatch.setattr(sys, "argv", ["train.py", "--config", str(config_path)])
+    with pytest.raises(ValueError, match="exact optimizer-step budget"):
+        train.main()
+    assert not (root / "checkpoints/final.ckpt").exists()
+
+
+def test_comparison_lightning_cpu_final_checkpoint_carries_full_state(tmp_path, monkeypatch):
+    train = _train_script()
+    root = tmp_path / "run"
+    spatial, motion = tmp_path / "spatial.json", tmp_path / "motion.json"
+    spatial.write_text("spatial")
+    motion.write_text("motion")
+    config_path = tmp_path / "config.yaml"
+    OmegaConf.save(
+        {
+            "seed": 0,
+            "comparison": {"enabled": True, "smoke": True},
+            "trainer": {
+                "default_root_dir": str(root),
+                "accelerator": "cpu",
+                "devices": 1,
+                "max_steps": 1,
+                "max_epochs": -1,
+                "logger": False,
+                "enable_checkpointing": False,
+                "enable_progress_bar": False,
+                "enable_model_summary": False,
+            },
+            "data": {"spatial_manifest": str(spatial), "motion_manifest": str(motion)},
+            "model": {
+                "spatial_dim": 2048,
+                "motion_dim": 1024,
+                "name": "google/flan-t5-xl",
+                "revision": FLAN_SHA,
+            },
+        },
+        config_path,
+    )
+    ann = _fake_annotation_root(config_path, tmp_path)
+
+    class ToyModel(pl.LightningModule):
+        def __init__(self):
+            super().__init__()
+            self.weight = torch.nn.Parameter(torch.tensor(1.0))
+
+        def training_step(self, batch, batch_idx):
+            return (self.weight * batch).square().mean()
+
+        def configure_optimizers(self):
+            optimizer = torch.optim.Adam(self.parameters(), lr=0.01)
+            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda step: 1 / (step + 1))
+            return {
+                "optimizer": optimizer,
+                "lr_scheduler": {"scheduler": scheduler, "interval": "step"},
+            }
+
+        def on_save_checkpoint(self, checkpoint):
+            checkpoint["run_metadata"] = self.run_metadata
+
+    class ToyData(pl.LightningDataModule):
+        def train_dataloader(self):
+            return torch.utils.data.DataLoader([torch.tensor([1.0])], batch_size=1)
+
+    model = ToyModel()
+    monkeypatch.setattr(train, "preflight_run", lambda *args: {})
+    monkeypatch.setattr(train, "dino_frame_rows_hash", lambda config: "e" * 64)
+    monkeypatch.setattr(train, "build_data", lambda config: ToyData())
+    monkeypatch.setattr(train, "build_model", lambda config: model)
+    monkeypatch.setattr(train, "_model_revision", lambda model: (FLAN_SHA, "resolved"))
+    monkeypatch.setattr(sys, "argv", ["train.py", "--config", str(config_path)])
+
+    train.main()
+
+    checkpoint = torch.load(root / "checkpoints/final.ckpt", map_location="cpu", weights_only=True)
+    assert checkpoint["global_step"] == 1
+    assert checkpoint["optimizer_states"][0]["state"]
+    assert checkpoint["lr_schedulers"]
+    assert checkpoint["run_metadata"]["annotation_sha256"] == {
+        split: sha256_file(ann / f"{split}_info_ml.npy") for split in ("train", "dev", "test")
+    }
+    from despamo.comparison import comparison_code_sha256
+
+    assert checkpoint["run_metadata"]["comparison_code_sha256"] == comparison_code_sha256(
+        train.PROJECT_ROOT
+    )
+    assert json.loads((root / "run_metadata.json").read_text()) == checkpoint["run_metadata"]

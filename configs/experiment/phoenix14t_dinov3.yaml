@@ -1,0 +1,3 @@
+data:
+  spatial_root: ${oc.env:DINO_ROOT}
+  spatial_manifest: ${oc.env:DINO_ROOT}/complete/manifest.json
