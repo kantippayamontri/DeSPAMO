@@ -275,7 +275,10 @@ def test_lightning_resume_keeps_physical_batches_optimizer_scheduler_and_rng(tmp
     partial.save_checkpoint(path)
     checkpoint = torch.load(path, map_location="cpu", weights_only=False)
     verify_resume(
-        checkpoint, identity, expected_step=2, spent_gpu_seconds=checkpoint["gpu_seconds_cumulative"]
+        checkpoint,
+        identity,
+        expected_step=2,
+        spent_gpu_seconds=checkpoint["gpu_seconds_cumulative"],
     )
     resumed, resumed_model, resumed_data = train(
         5, checkpoint=path, spent=checkpoint["gpu_seconds_cumulative"]

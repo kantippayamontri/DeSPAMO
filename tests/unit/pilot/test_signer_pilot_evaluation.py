@@ -26,7 +26,9 @@ def test_heldout_references_cannot_affect_pilot_prompts():
                       fr_texts=("changed", "changed"),
                       es_texts=("changed", "changed"))
     assert pilot_prompts(original, "Translate into {}.") == ["Translate into German."] * 2
-    assert pilot_prompts(changed, "Translate into {}.") == pilot_prompts(original, "Translate into {}.")
+    assert pilot_prompts(changed, "Translate into {}.") == pilot_prompts(
+        original, "Translate into {}."
+    )
 
 
 class FakeAdapter(nn.Module):

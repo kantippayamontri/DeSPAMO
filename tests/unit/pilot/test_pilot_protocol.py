@@ -2,11 +2,11 @@ from copy import deepcopy
 
 import pytest
 
-from despamo.pilot import bind_protocol, validate_live_counts
-from tests.unit.pilot.test_signer_split import fixture
-from despamo.data.signer_split import build_split
 from despamo.appearance.provenance import digest, read_json
+from despamo.data.signer_split import build_split
+from despamo.pilot import bind_protocol, validate_live_counts
 from scripts.freeze_signer_pilot import publish_protocol
+from tests.unit.pilot.test_signer_split import fixture
 
 
 def test_protocol_binds_split_and_unmodified_text_encoder():
@@ -32,9 +32,12 @@ def test_protocol_binds_split_and_unmodified_text_encoder():
     assert len(proto["protocol_hash"]) == 64
     changed = deepcopy(split)
     changed["split_hash"] = "different"
-    assert bind_protocol(changed, "qwen-version", "source-hash", "version-hash",
-                         "records-hash", "text-hash", metadata, "frame-rows-hash",
-                         "spatial-hash", "motion-hash", "annotation-hash")["protocol_hash"] != proto["protocol_hash"]
+    different = bind_protocol(
+        changed, "qwen-version", "source-hash", "version-hash",
+        "records-hash", "text-hash", metadata, "frame-rows-hash",
+        "spatial-hash", "motion-hash", "annotation-hash",
+    )
+    assert different["protocol_hash"] != proto["protocol_hash"]
     for changed_meta in ({**metadata, "revision": "other"},
                          {**metadata, "tokenizer_revision": "other"},
                          {**metadata, "model": "other"}):

@@ -7,10 +7,10 @@ import torch
 from despamo.appearance.canonical import targets
 from despamo.appearance.provenance import atomic_json, digest, file_hash, load_dataset, read_json
 from despamo.appearance.schema import ARTICULATORS, FACTORS, STABLE, Record
+from despamo.appearance.text_features import encode_dataset
 from despamo.data.batch import PhoenixSample
 from despamo.data.factors import FactorDataset, collate_factors, load_factor_targets, map_rows
 from despamo.data.manifest import FeatureManifest, FeatureRecord
-from despamo.appearance.text_features import encode_dataset
 from tests.unit.appearance.helpers import clip, payload, prepared_dataset
 
 

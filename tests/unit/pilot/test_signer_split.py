@@ -77,7 +77,9 @@ def test_logical_holdouts_keep_physical_train_feature_lookup():
         split = "train"
         spatial_root = Path("/sample/train-features")
         motion_root = Path("/sample/motion")
-        spatial_manifest = SimpleNamespace(require=lambda split, clip_id: calls.append((split, clip_id)))
+        spatial_manifest = SimpleNamespace(
+            require=lambda split, clip_id: calls.append((split, clip_id))
+        )
 
         def __init__(self):
             self.records = [{"fileid": c["clip_id"]} for c in source["clips"]]
