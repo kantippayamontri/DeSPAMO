@@ -7,6 +7,7 @@ import random
 import shutil
 import signal
 import time
+from functools import partial
 from pathlib import Path
 
 import numpy as np
@@ -30,6 +31,40 @@ PROTOCOL_HASH = "0d7df319799e2c98883fdc6a494970be3edb4b1e62b09034c2c7742d1b2352c
 DATASET_KEY = "b4d52678db150326ce22d1b73811883a99ec2b8100f258e3690b4d90a004297a"
 POLICY = "qwen-schema98-unreviewed-v1"
 BATCH_SIZES = (4, 8, 16)
+
+
+def cosine_warmup_factor(step: int, *, warmup_steps: int, total_steps: int) -> float:
+    """Linear warmup then cosine decay to zero, as DIFFER uses (paper section 4).
+
+    The original E3 adaptation ran at a constant LoRA LR with no decay, which applied
+    roughly 42x more cumulative update pressure than DIFFER despite fewer epochs. That
+    is the suspected cause of handshape erosion at 25 epochs.
+    """
+    if total_steps < 1 or warmup_steps < 0 or warmup_steps > total_steps or step < 0:
+        raise ValueError("E3 LR schedule window invalid")
+    if step < warmup_steps:
+        return step / max(1, warmup_steps)
+    progress = (step - warmup_steps) / max(1, total_steps - warmup_steps)
+    return max(0.0, 0.5 * (1.0 + math.cos(math.pi * min(1.0, progress))))
+
+
+def make_e3_optimizer(lora_params, head_params, *, lora_lr: float, head_lr: float,
+                      weight_decay: float | None, warmup_steps: int, total_steps: int):
+    """Build the adaptation optimizer and, when scheduled, its cosine LR scheduler.
+
+    `total_steps == 0` selects the legacy constant-LR path so the completed
+    no-decay runs stay exactly reproducible.
+    """
+    groups = [{"params": list(lora_params), "lr": lora_lr},
+              {"params": list(head_params), "lr": head_lr}]
+    extra = {} if weight_decay is None else {"weight_decay": weight_decay}
+    optimizer = torch.optim.AdamW(groups, **extra)
+    if total_steps < 1:
+        return optimizer, None
+    schedule = partial(cosine_warmup_factor, warmup_steps=warmup_steps,
+                       total_steps=total_steps)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, schedule)
+    return optimizer, scheduler
 
 
 def e3_run_path(output_base: Path, identity: dict) -> Path:
@@ -210,7 +245,7 @@ def _load_lora_state(model, state: dict) -> None:
 
 
 def _snapshot(output: Path, step: int, identity: dict, spent: float, model,
-              heads, optimizer, sampler: E3BatchSampler) -> None:
+              heads, optimizer, sampler: E3BatchSampler, scheduler=None) -> None:
     target = output / f"resume-{step}.pt"
     if target.exists() or target.with_suffix(".json").exists():
         raise ValueError("E3 snapshot already exists")
@@ -220,6 +255,7 @@ def _snapshot(output: Path, step: int, identity: dict, spent: float, model,
     state = {"identity": identity, "step": step, "gpu_seconds": spent,
              "model": _lora_state(model), "heads": heads.state_dict(),
              "optimizer": optimizer.state_dict(), "sampler": sampler.state_dict(),
+             "scheduler": scheduler.state_dict() if scheduler is not None else None,
              "rng": {"torch": torch.get_rng_state(), "cuda": torch.cuda.get_rng_state_all(),
                      "python": random.getstate(), "numpy": np.random.get_state()}}
     try:
@@ -260,6 +296,10 @@ def execute(args) -> dict:
                 "frame_rows_hash": protocol["frame_rows_hash"],
                 "base_revision": BASE_SHA, "seed": 0, "batch_size": args.batch_size,
                 "relational_weight": args.relational_weight,
+                "lora_lr": args.lora_lr, "head_lr": args.head_lr,
+                "weight_decay": args.weight_decay,
+                "cosine_decay": bool(args.cosine_decay),
+                "lr_warmup_steps": args.lr_warmup_steps,
                 "relational_terms": ["pattern", "spread"],
                 "adapt_steps": args.adapt_steps,
                 "calibration_steps": args.calibration_steps,
@@ -311,14 +351,21 @@ def execute(args) -> dict:
         attach_late_lora(model)
         heads = DINOFactorHeads().to("cuda")
         lora = [p for p in model.parameters() if p.requires_grad]
-        optimizer = torch.optim.AdamW([{"params": lora, "lr": 1e-4},
-                                       {"params": list(heads.parameters()), "lr": 3e-4}])
+        optimizer, scheduler = make_e3_optimizer(
+            lora, heads.parameters(),
+            lora_lr=args.lora_lr, head_lr=args.head_lr,
+            weight_decay=args.weight_decay,
+            warmup_steps=args.lr_warmup_steps,
+            total_steps=args.adapt_steps if args.cosine_decay else 0,
+        )
         sampler = E3BatchSampler(ids, seed=0, batch_size=args.batch_size)
         initial = 0
         if checkpoint is not None:
             _load_lora_state(model, checkpoint["model"])
             heads.load_state_dict(checkpoint["heads"], strict=True)
             optimizer.load_state_dict(checkpoint["optimizer"])
+            if scheduler is not None and checkpoint.get("scheduler") is not None:
+                scheduler.load_state_dict(checkpoint["scheduler"])
             sampler.load_state_dict(checkpoint["sampler"])
             torch.set_rng_state(checkpoint["rng"]["torch"])
             torch.cuda.set_rng_state_all(checkpoint["rng"]["cuda"])
@@ -349,13 +396,16 @@ def execute(args) -> dict:
                 if step > args.calibration_steps:
                     torch.nn.utils.clip_grad_norm_(lora, 1.0)
                 optimizer.step()
+                if scheduler is not None:
+                    scheduler.step()
                 if step % 500 == 0 or step == args.adapt_steps:
                     torch.cuda.synchronize()
                     elapsed = spent + time.monotonic() - started
                     if elapsed >= args.gpu_cap_seconds:
                         raise TimeoutError("E3 adaptation GPU cap exceeded")
                     _snapshot(
-                        args.output, step, identity, elapsed, model, heads, optimizer, sampler
+                        args.output, step, identity, elapsed, model, heads, optimizer,
+                        sampler, scheduler
                     )
                     atomic_json(args.output / "budget.json",
                                 _budget(identity, "running", elapsed, step))
@@ -387,6 +437,13 @@ def main() -> None:
     parser.add_argument("--gpu-cap-seconds", required=True, type=int)
     parser.add_argument("--batch-size", type=int, default=4, choices=BATCH_SIZES)
     parser.add_argument("--relational-weight", type=float, default=0.0)
+    # DIFFER-faithful schedule: paper uses SGD 2e-6 with cosine decay over 60 epochs.
+    # Defaults below preserve the original constant-LR behaviour exactly.
+    parser.add_argument("--lora-lr", type=float, default=1e-4)
+    parser.add_argument("--head-lr", type=float, default=3e-4)
+    parser.add_argument("--weight-decay", type=float, default=None)
+    parser.add_argument("--cosine-decay", action="store_true")
+    parser.add_argument("--lr-warmup-steps", type=int, default=0)
     parser.add_argument("--authorize-e3-run", action="store_true")
     parser.add_argument("--resume", type=Path)
     args = parser.parse_args()
