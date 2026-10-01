@@ -21,6 +21,7 @@ from scripts.train_signer_pilot import (
     E1ResumeSnapshots,
     FullDevCheckpoints,
     _model,
+    checkpoint_steps,
     validate_e1_resume_checkpoint,
 )
 from tools.dinov3.storage import verify_location, writer
@@ -28,9 +29,14 @@ from tools.dinov3.storage import verify_location, writer
 RUN_POLICY = "signer-pilot-e1-fresh-retry-v3"
 PARENT_POLICY = "signer-pilot-e1-fresh-retry-v2"
 OVERALL_CEILING_SECONDS = 24 * 3600
+WARMUP = {4000: 1000, 6000: 2000, 8000: 2000}
 
 
 def build_v3(args, protocol: dict, parent: Path, *, resume: bool = False) -> tuple[dict, Path]:
+    steps = getattr(args, "steps", 4000)
+    if steps not in WARMUP:
+        raise ValueError("unsupported SpaMo step tier")
+    args.steps = steps
     """Keep old ledger intact; new budget counts only GPU residency after fresh start."""
     if not getattr(args, "authorize_new_six_hour_run", False):
         raise ValueError("E1-v3 requires explicit new six-hour authorization")
@@ -69,7 +75,7 @@ def build_v3(args, protocol: dict, parent: Path, *, resume: bool = False) -> tup
         args.annotation.parent,
         args.dino_root / "complete/manifest.json",
         args.motion_manifest,
-        4000,
+        args.steps,
         4,
         args.output_base,
     )
@@ -151,7 +157,7 @@ def run_v3(args, protocol: dict, views: dict, parent: Path) -> dict:
                 config,
                 "E1_frozen",
                 768,
-                4000,
+                args.steps,
                 {
                     "supervision_policy": "qwen-schema98-unreviewed-v1",
                     "human_review_status": "not_assessed",
@@ -161,15 +167,15 @@ def run_v3(args, protocol: dict, views: dict, parent: Path) -> dict:
                 raise ValueError("E1-v3 fresh shared initialization hash mismatch")
             model.run_metadata = identity
             charge_model_loaded(ledger)
-            data = PilotDataModule(views["train"], 4, 0, 4000, collate_phoenix)
+            data = PilotDataModule(views["train"], 4, 0, args.steps, collate_phoenix)
             dev_ids = tuple(protocol["split"]["groups"]["dev"]["clip_ids"])
             dev = FullDevCheckpoints(
                 views["dev"],
                 dev_ids,
                 protocol["split_hash"],
                 output,
-                4000,
-                1000,
+                args.steps,
+                WARMUP[args.steps],
                 4,
                 "E1_frozen",
                 ledger=ledger,
@@ -185,8 +191,9 @@ def run_v3(args, protocol: dict, views: dict, parent: Path) -> dict:
                 callbacks=[E1BudgetGuard(ledger), dev, E1ResumeSnapshots(output, ledger)],
             )
             trainer.fit(model, datamodule=data, ckpt_path=str(resume) if resume else None)
-            if trainer.global_step == 4000:
-                reports = [read_json(output / f"dev-{step}.json") for step in (1750, 2800, 4000)]
+            if trainer.global_step == args.steps:
+                schedule = checkpoint_steps(args.steps, WARMUP[args.steps])
+                reports = [read_json(output / f"dev-{step}.json") for step in schedule]
                 best = choose_checkpoint(reports, dev_ids)
                 atomic_json(
                     output / "selected-checkpoint.json",
@@ -198,7 +205,7 @@ def run_v3(args, protocol: dict, views: dict, parent: Path) -> dict:
                     },
                 )
             result = {
-                "status": "complete" if trainer.global_step == 4000 else "partial",
+                "status": "complete" if trainer.global_step == args.steps else "partial",
                 "global_step": trainer.global_step,
                 "run_key": output.name,
                 "protocol_hash": protocol["protocol_hash"],
@@ -246,6 +253,7 @@ def main():
     ):
         parser.add_argument("--" + key, required=True, type=Path)
     parser.add_argument("--physical-batch", type=int, default=4)
+    parser.add_argument("--steps", type=int, default=4000, choices=sorted(WARMUP))
     parser.add_argument("--resume-checkpoint", type=Path)
     parser.add_argument("--authorize-new-six-hour-run", action="store_true")
     args = parser.parse_args()
