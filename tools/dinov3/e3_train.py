@@ -57,8 +57,10 @@ def make_e3_optimizer(lora_params, head_params, *, lora_lr: float, head_lr: floa
     """
     groups = [{"params": list(lora_params), "lr": lora_lr},
               {"params": list(head_params), "lr": head_lr}]
-    extra = {} if weight_decay is None else {"weight_decay": weight_decay}
-    optimizer = torch.optim.AdamW(groups, **extra)
+    if weight_decay is not None:
+        optimizer = torch.optim.AdamW(groups, weight_decay=weight_decay)
+    else:
+        optimizer = torch.optim.AdamW(groups)
     if total_steps < 1:
         return optimizer, None
     schedule = partial(cosine_warmup_factor, warmup_steps=warmup_steps,

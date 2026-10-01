@@ -95,8 +95,8 @@ class _Reverse(torch.autograd.Function):
         return value.view_as(value)
 
     @staticmethod
-    def backward(ctx, gradient):
-        return -ctx.alpha * gradient, None
+    def backward(ctx, *grad_outputs):
+        return -ctx.alpha * grad_outputs[0], None
 
 
 def _contrast(visual, text, labels, active):

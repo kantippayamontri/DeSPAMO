@@ -149,6 +149,7 @@ def run_v3(args, protocol: dict, views: dict, parent: Path) -> dict:
                 ledger = E1Ledger.resume(
                     output, identity, checkpoint_seconds, checkpoint_step=checkpoint_step
                 )
+            assert ledger is not None
             signal.setitimer(signal.ITIMER_REAL, max(1, CEILING_SECONDS - ledger.last - 2))
             alarm_armed = True
             config = OmegaConf.create(identity["config"])
@@ -165,7 +166,7 @@ def run_v3(args, protocol: dict, views: dict, parent: Path) -> dict:
             )
             if shared_tensor_hash(model) != E1_SHARED_HASH:
                 raise ValueError("E1-v3 fresh shared initialization hash mismatch")
-            model.run_metadata = identity
+            model.run_metadata = identity  # pyright: ignore[reportArgumentType]
             charge_model_loaded(ledger)
             data = PilotDataModule(views["train"], 4, 0, args.steps, collate_phoenix)
             dev_ids = tuple(protocol["split"]["groups"]["dev"]["clip_ids"])
@@ -190,7 +191,7 @@ def run_v3(args, protocol: dict, views: dict, parent: Path) -> dict:
                 **dict(config.trainer),
                 callbacks=[E1BudgetGuard(ledger), dev, E1ResumeSnapshots(output, ledger)],
             )
-            trainer.fit(model, datamodule=data, ckpt_path=str(resume) if resume else None)
+            trainer.fit(model, datamodule=data, ckpt_path=str(resume) if resume else None)  # pyright: ignore[reportArgumentType]
             if trainer.global_step == args.steps:
                 schedule = checkpoint_steps(args.steps, WARMUP[args.steps])
                 reports = [read_json(output / f"dev-{step}.json") for step in schedule]
@@ -228,6 +229,7 @@ def run_v3(args, protocol: dict, views: dict, parent: Path) -> dict:
             ledger.close()
         signal.signal(signal.SIGTERM, old_term)
         signal.signal(signal.SIGALRM, old_alarm)
+    assert ledger is not None
     result["gpu_seconds"] = ledger.last
     result["overall_recorded_seconds"] = identity["prior_recorded_gpu_seconds"] + ledger.last
     if result["overall_recorded_seconds"] >= OVERALL_CEILING_SECONDS:

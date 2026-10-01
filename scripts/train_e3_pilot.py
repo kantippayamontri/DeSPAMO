@@ -123,6 +123,7 @@ def _prepare(args):
                           args.annotation.parent, args.adapted_root / "complete/manifest.json",
                           args.motion_manifest, args.steps, 4, args.output_base)
     resolved = OmegaConf.to_container(config, resolve=True)
+    assert isinstance(resolved, dict)
     require_matched_e3_config(e1_identity, resolved, str(args.adapted_root), steps=args.steps)
     ids = tuple(sorted(record["fileid"] for view in views.values() for record in view.records))
     adapted = validate_adapted_manifest(args.adapted_root, adaptation, ids)
@@ -166,8 +167,10 @@ def run_e3(args):
                 spent = read_json(output / "budget.json")["gpu_seconds"]
                 checkpoint = validate_e1_resume_checkpoint(resume, output, identity, spent)
                 elapsed, step = checkpoint["gpu_seconds_cumulative"], checkpoint["global_step"]
+                checkpoint_step = step
                 del checkpoint
-                ledger = E1Ledger.resume(output, identity, elapsed, checkpoint_step=step)
+                ledger = E1Ledger.resume(output, identity, elapsed, checkpoint_step=checkpoint_step)
+            assert ledger is not None
             signal.signal(signal.SIGALRM, timeout)
             signal.setitimer(signal.ITIMER_REAL,
                              max(1, args.gpu_cap_seconds - ledger.last - 1))
@@ -175,7 +178,7 @@ def run_e3(args):
                            {"supervision_policy": POLICY, "human_review_status": "not_assessed"})
             if shared_tensor_hash(model) != E1_SHARED_HASH:
                 raise ValueError("E3 fresh shared initialization differs from E1/E2")
-            model.run_metadata = identity
+            model.run_metadata = identity  # pyright: ignore[reportArgumentType]
             ledger.charge(step=ledger.step, phase="model_loaded")
             data = PilotDataModule(views["train"], 4, 0, args.steps, collate_phoenix)
             dev_ids = tuple(protocol["split"]["groups"]["dev"]["clip_ids"])
@@ -187,7 +190,7 @@ def run_e3(args):
             trainer = pl.Trainer(**dict(config.trainer),
                                  callbacks=[E1BudgetGuard(ledger), dev,
                                             E1ResumeSnapshots(output, ledger)])
-            trainer.fit(model, datamodule=data, ckpt_path=str(resume) if resume else None)
+            trainer.fit(model, datamodule=data, ckpt_path=str(resume) if resume else None)  # pyright: ignore[reportArgumentType]
             if trainer.global_step != args.steps:
                 raise RuntimeError(f"E3 SpaMo did not complete {args.steps} optimizer steps")
             schedule = checkpoint_steps(args.steps, WARMUP[args.steps])
