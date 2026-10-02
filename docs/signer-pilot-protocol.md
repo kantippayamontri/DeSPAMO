@@ -149,6 +149,17 @@ unseen held-out signer substantially exceeds the 0.3-point significance threshol
 Paired report:
 `/home/kan/datasets/despamo/signer-pilot/signer07-e1-e3-relational-0.1-8000-paired-v1.json`.
 
+### Final Signer Probe on Trained Spatial Projector Outputs (867 test clips, 7 signers):
+Evaluated using the identical partition hash (`9462d3647beaf...`), linear probe, and evaluation protocol as E1 and E2:
+
+| Model | Signer Top-1 Accuracy | Balanced Accuracy | Delta vs Baseline (E1) |
+|---|---:|---:|---:|
+| **E1 (frozen DINO baseline)** | 99.54% | 99.60% | — |
+| **E2 (projector GRL factors)** | 99.42% | 99.25% | -0.12% (top-1) / -0.35% (balanced) |
+| **E3 (relational w=0.1, 8k)** | **97.81%** | **95.37%** | **-1.73% (top-1) / -4.23% (balanced)** |
+
+Report: `/home/kan/datasets/despamo/signer-pilot/probe-e3-relational-0.1-8000-projector-v1.json`.
+
 ## Diagnosed adaptation defect and the relational structure fix
 
 Probing the completed 4,000-step E3 adaptation showed its DIFFER-style objective did
