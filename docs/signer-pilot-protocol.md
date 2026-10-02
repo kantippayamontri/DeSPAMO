@@ -132,14 +132,22 @@ Held-out scoring on the 768 Signer07 test clips:
 
 | Method | Signer03 dev BLEU-4 | Signer07 held-out BLEU-4 | Gain from 8k steps |
 |---|---:|---:|---:|
-| **E1@8000 (frozen DINO)** | **4.0381** | 3.4238 | +0.4338 |
-| **E3@8000 (adapted DINO)** | 3.9699 | **3.7337** | **+0.6765** |
-| **E3 minus E1** | -0.0682 | **+0.3099** | **+0.2427** |
+| **E1@8000 (frozen DINO)** | 4.0381 | 3.4238 | +0.4338 |
+| **E3@8000 (adapted DINO, collapsed)** | 3.9699 | 3.7337 | +0.6765 |
+| **E3@8000 (relational w=0.1, preserved)** | **4.4447** | **3.8554** | **+0.7981** |
 
-Every metric on the unseen signer improved: BLEU-1 +0.87, BLEU-2 +0.67, BLEU-3 +0.41,
-BLEU-4 **+0.3099**, ROUGE-L +0.0035. The +0.3099 gain on the unseen signer exceeds
-the 0.3-point significance threshold. Paired report:
-`/home/kan/datasets/despamo/signer-pilot/signer07-e1-e3-8000-paired-v1.json`.
+### Comparison of Final Relational E3 (w=0.1) vs Baseline (E1) at 8,000 steps:
+- **Signer03 dev BLEU-4:** **4.4447** vs 4.0381 (**+0.4066**)
+- **Signer07 test BLEU-4:** **3.8554** vs 3.4238 (**+0.4316**)
+- **Signer07 test BLEU-1:** **20.3410** vs 17.8989 (**+2.4421**)
+- **Signer07 test BLEU-2:** **9.3507** vs 7.9805 (**+1.3702**)
+- **Signer07 test BLEU-3:** **5.5132** vs 4.7684 (**+0.7448**)
+- **Signer07 test ROUGE-L:** **0.1662** vs 0.1575 (**+0.0086**)
+
+Both models selected their step-5600 checkpoints on Signer03 dev. The +0.4316 gain on the
+unseen held-out signer substantially exceeds the 0.3-point significance threshold.
+Paired report:
+`/home/kan/datasets/despamo/signer-pilot/signer07-e1-e3-relational-0.1-8000-paired-v1.json`.
 
 ## Diagnosed adaptation defect and the relational structure fix
 
