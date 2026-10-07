@@ -1,0 +1,12 @@
+[project]
+name = "despamo-how2sign-probe"
+version = "0.1.0"
+description = "Stage-1 crop/label feasibility probe for How2Sign (design 2026-10-01)"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "mediapipe==0.10.21",
+  "opencv-python",
+  "numpy",
+  "pytest",
+  "pydantic>=2.10,<3",
+]
