@@ -1,5 +1,8 @@
 # How2Sign Crop Probe (Stage 1 of the 2026-10-01 design, ported to How2Sign)
 
+For end-to-end setup, dataset preparation, exact commands, recovery and HPC
+handoff, see [the text-extraction reproduction runbook](../../docs/reproduce-qwen-text-extraction.md).
+
 ## Versioned queue drivers
 
 Portable source copies of the active local queue drivers are in `scripts/`:
