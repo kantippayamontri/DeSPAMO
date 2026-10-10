@@ -15,9 +15,14 @@ root, remote process control or edits to its checkpoint-bound source are needed.
 
 Read these in order:
 
-1. [Architecture design](superpowers/specs/2026-10-10-global-local-rvlf-design.md)
-2. [Superpowers implementation plan](superpowers/plans/2026-10-10-global-local-rvlf.md)
-3. [Frozen CLIP/S² extraction contract](superpowers/specs/2026-10-09-frozen-clip-s2-reference-design.md)
+1. [SigLIP 2 encoder amendment](superpowers/specs/2026-10-10-siglip2-global-local-amendment.md)
+2. [Architecture design](superpowers/specs/2026-10-10-global-local-rvlf-design.md)
+3. [Superpowers implementation plan](superpowers/plans/2026-10-10-global-local-rvlf.md)
+
+The earlier [CLIP/S² plan](superpowers/specs/2026-10-09-frozen-clip-s2-reference-design.md)
+is retained as historical/optional comparison material, not the selected encoder
+contract for this separate-server project. Current original-host DINO training
+continues under its existing identity and features.
 
 ## What this branch contains
 
@@ -27,7 +32,7 @@ Read these in order:
 - Motion extraction/provenance code with its separate uv lock.
 - Approved architecture, implementation tasks and this handoff.
 
-The new global/local adapter, regional CLIP extractor, portable runner and
+The new global/local adapter, regional SigLIP extractor, portable runner and
 fine-grained loss are **not implemented yet**. Baseline tests verify published
 source completeness, not new-method performance. Historical `tools/followup/`,
 `tools/benchmark/` and Windows-aware storage helpers retain original-host paths;
@@ -37,11 +42,11 @@ config/runtime/entrypoints as the plan describes.
 ## Approved architecture
 
 ```text
-Global CLIP + S²2048 + VideoMAE1024 -> global fusion/temporal -> G768 --+
+Global SigLIP 2 tiled2304 + VideoMAE1024 -> global temporal -> G768 ---+
                                                                     |
-Left-hand CLIP1024 --+                                               |
-Right-hand CLIP1024 -+-> masked local MLP -> local temporal -> L768 ---+
-Mouth CLIP1024 ------+                                               |
+Left-hand SigLIP1152 --+                                             |
+Right-hand SigLIP1152 -+-> masked local MLP -> temporal -> L768 -------+
+Mouth SigLIP1152 ------+                                             |
                                                                     v
                                                     support-aligned global/local fusion
                                                                     |
@@ -53,8 +58,10 @@ Mouth CLIP1024 ------+                                               |
                               against German token embeddings              translation
 ```
 
-- CLIP stays frozen, same weights serve all streams. Local crops use one scale,
-  not S². Mouth replaces full face; left/right identity is anatomical.
+- SigLIP vision backbone and native attention-pooling head stay frozen; same
+  weights serve all streams. Global384base plus four384tiles at768scale export
+  2304channels; local single384crops export1152each. No CLS token/first-patch
+  substitution. Mouth replaces full face; left/right identity is anatomical.
 - Local regions combine first, global/local combine second. Fixed residual is
   the control; confidence-aware global/local gate is its matched extension.
 - Masks remove missing evidence after biases and temporal/alignment processing;
@@ -75,13 +82,18 @@ Use Python3.11 and existing lock, not another package manager or guessed upgrade
 uv sync --locked
 ```
 
-Main environment pins torch2.0.1, transformers4.32.0, PEFT0.7.1 and NumPy1.26.4.
-Verify CUDA-driver compatibility on destination before GPU work. The main
-environment supports CLIP and FLAN; DINO/motion tools have separate environments.
-The main lock does not currently contain Pillow. Baseline cached-feature training
-does not need image decoding; Task3 must explicitly pin image-preprocessing
-dependencies in the chosen CLIP preparation environment before extraction. Do not
-assume Pillow or a detector is installed because translation tests pass.
+Main translation environment pins torch2.0.1, transformers4.32.0, PEFT0.7.1 and
+NumPy1.26.4. Keep this runtime/lock and FLAN decoder unchanged. Transformers4.32
+does not support the selected SigLIP checkpoint; source's old CLIP loaders are
+not valid SigLIP extractors. DINO/motion tools have separate environments.
+
+Task3 creates `tools/global_local/vision/` with its own uv project/lock and pinned
+Torch/Transformers/Pillow stack. Supported starting candidate is Torch2.5.1,
+Transformers4.56.2, Pillow11.3.0 and NumPy1.26.4; verify CUDA compatibility and
+exact checkpoint pooling/processing before accepting features. Do not upgrade
+main or original-host environments and do not mix import paths. New vision
+project is an implementation task, not an already present directory. Provider
+software may need another explicitly pinned tracker environment.
 For motion tool work only, use its existing configuration:
 
 ```bash
@@ -127,12 +139,12 @@ Required inputs:
 | --- | --- |
 | Official annotations | train7096/dev519/test642 `*_info_ml.npy`, multilingual train text included |
 | Original frames | ordered per-clip source PNGs,947756total, pinned frame IDs/content hashes |
-| CLIP snapshot | `openai/clip-vit-large-patch14`,32bd64288804d66eefd0ccbe215aa642df71cc41 |
-| CLIP image processor | metadata at same revision, stored/hash-bound; original snapshot was missing processor file |
+| SigLIP 2 snapshot | `google/siglip2-so400m-patch14-384`,e8e487298228002f3d8a82e0cd5c8ea9c567f57f |
+| SigLIP image processor | pinned fixed-resolution384metadata, RGB conversion explicit, mean/std0.5, native attention-pool readout |
 | FLAN snapshot/tokenizer | `google/flan-t5-xl`,7d6315df2c2fb742f0f5b556879d730926ca9001 |
 | Motion cache |1024width,16frame/stride8, original encoder/array/window/source provenance |
 | Regional observations | left_hand/right_hand/mouth boxes, confidence, validity, tracks, original-frame indices and detector identity |
-| Global/local caches | global2048/local3×1024per frame, masks/confidence/source receipts, independently verified publication |
+| Global/local caches | global2304/local3×1152per frame, masks/confidence/source receipts, independently verified publication |
 
 Transfer model/cache/data bytes separately or regenerate with declared provenance.
 Verify hashes/counts before loading. Do not copy original-host absolute-path
@@ -146,7 +158,7 @@ Hugging Face token/private key into a tracked config or handoff.
 
 ## First experiments after implementation
 
-1. Pooled versus fine-grained alignment on same global-only CLIP/S² baseline,
+1. Pooled versus fine-grained alignment on same global-only SigLIP/tiled baseline,
    following approved roadmap; keep everything else fixed.
 2. With fine-grained alignment fixed: M0 global-only, M1 combined local fixed
    residual, M2 same local branch with confidence-aware global/local gate.

@@ -4,8 +4,12 @@
 
 `feat/global-local-rvlf` contains the current reference/fusion training source
 snapshot plus the approved design and implementation plan for a separate-server
-global/local experiment. Frozen CLIP ViT-L/14 supplies global S² features and
-single-scale hand/mouth crop features; FLAN-T5-XL remains the decoder. The planned
+global/local experiment. Selected backbone is now frozen
+`google/siglip2-so400m-patch14-384` for global two-scale features and single-scale
+hand/mouth crops; FLAN-T5-XL remains the decoder. Read the
+[SigLIP 2 amendment](docs/superpowers/specs/2026-10-10-siglip2-global-local-amendment.md)
+for native attention pooling,384/768scales,2304global/1152local dimensions and
+separate extraction-runtime requirements. The planned
 model combines local regions first, fuses local/global temporal features, and
 uses one fine-grained visual-text alignment loss on the fused representation.
 

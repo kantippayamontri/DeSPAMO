@@ -8,9 +8,14 @@
 - This branch publishes tested baseline source and an approved architecture for
   implementation on another server. The global/local model and fine-grained loss
   are not implemented yet. Do not label baseline tests as new-method results.
-- Approved extractors: frozen CLIP ViT-L/14 for global S²224/448 and single-scale
-  224 left-hand/right-hand/mouth crops; existing VideoMAE motion. Mouth replaces
-  full-face stream. No skeleton encoder, Qwen or CLIP adaptation in this stage.
+- Selected extractors now use frozen `google/siglip2-so400m-patch14-384`, revision
+  `e8e487298228002f3d8a82e0cd5c8ea9c567f57f`, for global and all local regions.
+  Read `docs/superpowers/specs/2026-10-10-siglip2-global-local-amendment.md` first.
+  Global two-scale384/768 pooled views produce2304channels; single384left-hand/
+  right-hand/mouth native attention-pooled vectors produce1152each. SigLIP has
+  no CLS token; this fixed-resolution checkpoint declares `model_type=siglip`.
+  Existing VideoMAE motion stays1024; mouth replaces full face. No skeleton,
+  Qwen or vision-encoder adaptation in this stage.
 - Hierarchical local fusion first, then global/local fusion in768channels, one
   shared2048channel connector into FLAN-T5-XL. One RVLF-inspired fine-grained
   visual/text contrastive loss on fused output, plus translation CE.
@@ -25,7 +30,9 @@
   source references with original-host paths. New portable `tools/global_local/`
   entrypoints must not launch those legacy controllers on another server.
 - Use existing uv locks and separate motion/DINO environments if those tools are
-  needed. CPU verification: `PYTHONPATH=src:. CUDA_VISIBLE_DEVICES=""
+  needed. SigLIP extraction needs its own supported, locked newer Transformers
+  environment; main4.32translation runtime stays unchanged. CPU verification:
+  `PYTHONPATH=src:. CUDA_VISIBLE_DEVICES=""
   HF_HUB_OFFLINE=1 OMP_NUM_THREADS=2 uv run --locked pytest tests/unit -q`.
 - Local original-host six-run training continues separately. Do not edit its
   retained worktree/main source, model/feature bytes, locks or environment.

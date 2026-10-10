@@ -1,9 +1,17 @@
-# CLIP Global/Local RVLF-Inspired Translation Design
+# SigLIP 2 Global/Local RVLF-Inspired Translation Design
 
 ## Approved objective and publication scope
 
 User approved a two-branch sign translation architecture, later replaced face
-with mouth, and approved frozen CLIP ViT-L/14 for both global and local features.
+with mouth, and originally approved frozen CLIP ViT-L/14 for global/local features.
+Latest instruction replaces that backbone with frozen
+`google/siglip2-so400m-patch14-384` for both branches. The
+[SigLIP 2 amendment](2026-10-10-siglip2-global-local-amendment.md) records verified
+checkpoint metadata and changed extraction/projection contracts; it supersedes
+CLIP-specific readout/resolution/dimensions for this separate-server experiment.
+User additionally approved native attention pooling,384/768global and384local
+extraction,2304global/1152local widths, retained768/2048fusion/connector, isolated
+supported extraction runtime and publication of the amended branch documents.
 User also approved FLAN-T5-XL, a2048channel connector, and one fine-grained
 RVLF-inspired VT-Align loss on fused visual representation. User requested a
 separate Git branch pushed for another server to develop this project while the
@@ -18,7 +26,7 @@ automatic test scoring or decoder replacement accompanies publication.
 
 ```text
 GLOBAL BRANCH
-Original RGB frames -> Frozen CLIP + S² -> Spatial features [N,2048] --+
+Original RGB frames -> Frozen SigLIP 2 + tiled scales -> [N,2304] ----+
                                                                     |
 Existing VideoMAE features [M,1024] -> Global fusion + temporal path --+
                                          |
@@ -27,9 +35,9 @@ Existing VideoMAE features [M,1024] -> Global fusion + temporal path --+
                                          +---------------------------+
                                                                      |
 LOCAL BRANCH                                                         |
-Left-hand crop  -> Same frozen CLIP -> [N,1024] -> Projection --+       |
-Right-hand crop -> Same frozen CLIP -> [N,1024] -> Projection --+       |
-Mouth crop      -> Same frozen CLIP -> [N,1024] -> Projection --+       |
+Left-hand crop  -> Same frozen SigLIP 2 -> [N,1152] -> Project -+       |
+Right-hand crop -> Same frozen SigLIP 2 -> [N,1152] -> Project -+       |
+Mouth crop      -> Same frozen SigLIP 2 -> [N,1152] -> Project -+       |
                                                              |       |
                                     Masks -> Local fusion MLP |       |
                                                              v       |
@@ -62,14 +70,18 @@ one local representation before global/local fusion.
 
 ## Models and extraction
 
-- Spatial/local encoder: `openai/clip-vit-large-patch14`, revision
-  `32bd64288804d66eefd0ccbe215aa642df71cc41`, frozen/eval, vision width1024.
-- Global: same CLIP processor once at224, interpolate preprocessed tensor to448,
-  four224tiles, mean tile final hidden-state CLS, concatenate original CLS then
-  tile mean for2048. Follow the saved frozen-CLIP/S² design's raw-CLS parity tests.
-- Local: one224processed RGB crop per region/frame; final hidden-state CLS of
-  width1024. No local S², CLIP projected768image embedding, post-normalized pooler
-  replacement, independently trained regional encoders or appearance adaptation.
+- Spatial/local encoder: `google/siglip2-so400m-patch14-384`, revision
+  `e8e487298228002f3d8a82e0cd5c8ea9c567f57f`, frozen/eval, vision width1152.
+  Official config declares fixed-resolution `siglip`/`siglip_vision_model`, not
+  NaFlex. Load according to pinned config; validate vision-only pooling output.
+- Global: pinned SigLIP processor once at384, interpolate normalized tensor to768,
+  four384tiles, attention-pool each view with pretrained native vision head;
+  concatenate original1152vector then mean of four tile1152vectors for2304.
+  This is S²-style pooled-view extraction, not exact SpaMo CLS wrapping. Do not
+  apply CLIP center-crop/normalization or treat first patch as a CLS token.
+- Local: one384processed RGB crop per region/frame; native attention-pooled
+  vector1152. No local S², first-patch/mean-patch substitution, independently
+  trained regional encoders or appearance adaptation. Pooling head remains frozen.
 - Use one encoder instance/microbatched inference for all regions; store finite
   FP32 arrays with model/processor/runtime/precision and batching identities.
   Missing observations produce zero stored features and `valid=false`.
@@ -111,7 +123,7 @@ frame totals827354/55775/64627 (947756total). No crop/caption changes in the
 existing original-host artifacts. Prepared regional features may cover test
 frames without using translations; that is label-free preparation, not scoring.
 
-Store global `[N,2048]`, local `[N,3,1024]`, local validity `[N,3]`, confidence
+Store global `[N,2304]`, local `[N,3,1152]`, local validity `[N,3]`, confidence
 `[N,3]` and explicit source indices/boxes. Separate canonical frame/content
 identity from machine-local path bindings. Same bytes/indices can transfer
 across servers; path-bound old receipts cannot silently be relabeled unchanged.
@@ -124,13 +136,16 @@ archive roots, seed, fusion variant and alignment variant. Resolve paths from
 config/environment, not `/home/kan` or `/mnt/b`. Normal Linux storage checking
 uses actual native filesystems; Windows backing-drive check applies only when
 configured for WSL. Preserve50GiB reserve plus measured remaining demand.
-Global+local FP32 arrays alone need about18.08GiB before motion, boxes/receipts,
+Global+local FP32 arrays alone need about20.34GiB before motion, boxes/receipts,
 checkpoints and archives. Compute actual candidate/checkpoint demand in preflight.
 
 ## Global path and temporal alignment
 
-Keep baseline spatial projector2048→1024/GELU→768, motion1024→768 and existing
-global temporal modules/weights for matched comparisons. The published baseline
+New spatial projector2304→1024/GELU→768 accommodates SigLIP global width; keep
+motion1024→768 and existing global temporal construction. Match fresh global
+weights across the new SigLIP variants, not against the old2048input layer, which
+has a different shape. Do not pad/truncate features to fake old-checkpoint
+compatibility. The published baseline
 `SpaMoVisualAdapter` concatenates spatial and motion tokens before K5/P2/K5/P2.
 The aligned-fusion extension also retains motion tokens. Thus its output is not
 automatically a uniform frame-grid sequence; do not interpolate local features
@@ -152,7 +167,7 @@ provenance-aware local alignment without silently redefining global baseline.
 
 ## Local and global/local fusion
 
-Each local region projects1024→768. Mask before projection to prevent invalid
+Each local region projects1152→768. Mask before projection to prevent invalid
 NaN values poisoning gradients, and after projection to remove bias-only output.
 Concatenate regions in fixed anatomical order, producing2304channels; local
 MLP2304→768/GELU→768 produces one frame-level local representation. No local
@@ -224,7 +239,7 @@ reconcile reports/stopping/pointers after interruption; latest2native resumes pl
 selected best, all actual dev candidates retained. Owned locks/PID/boot/start
 identity, explicit manual stop and bounded verified recovery; no duration stops.
 
-Matched local comparisons (two seeds0/1 each) after prerequisite global baseline:
+Matched local comparisons (two seeds0/1 each) after prerequisite SigLIP global baseline:
 M0 global-only/fine-grained; M1 same + local fixed residual;
 M2 same local branch + confidence-aware global/local gate. Hold crop/cache/loss/
 initial global weights/decoder/schedule/stopping fixed. Do not choose global fusion

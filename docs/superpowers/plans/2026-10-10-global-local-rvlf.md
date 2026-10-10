@@ -2,17 +2,18 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans for native implementation/self-review. No subagents unless user explicitly chooses them. Steps use checkbox (`- [ ]`) syntax; do not commit/push unless requested for that execution session.
 
-**Goal:** On another server, implement frozen CLIP global S² plus hand/mouth local features, hierarchical fusion and one fine-grained alignment loss with FLAN-T5-XL.
+**Goal:** On another server, implement frozen SigLIP 2 global tiled pooled views plus hand/mouth local features, hierarchical fusion and one fine-grained alignment loss with FLAN-T5-XL.
 
-**Architecture:** Keep published reference global path and connector contracts, add masked local temporal path and provenance-based alignment, then shared2048connector. Build new portable data/runtime/training namespace; historical original-host runners are references, not launch entrypoints.
+**Architecture:** Keep reference global sequence/temporal semantics, using new2304input projection and1152local projections; add masked local temporal path and provenance-based alignment, then shared2048connector. Build portable data/runtime/training namespace; historical original-host runners are references, not launch entrypoints.
 
-**Tech Stack:** Existing main uv lock/Python3.11/torch2.0.1/transformers4.32/PEFT0.7.1. Tracker preparation uses separately pinned environment if needed. No Qwen, GRPO or CLIP adaptation here.
+**Tech Stack:** Existing main translation uv lock/Python3.11/torch2.0.1/transformers4.32/PEFT0.7.1 stays unchanged. SigLIP extraction requires a separate locked newer Torch/Transformers/Pillow environment. Tracker preparation is isolated if needed. No Qwen, GRPO or vision adaptation here.
 
 **Spec:** [Approved architecture and review defaults](../specs/2026-10-10-global-local-rvlf-design.md).
+**Encoder amendment:** [SigLIP 2 metadata and extraction contract](../specs/2026-10-10-siglip2-global-local-amendment.md), superseding CLIP-specific widths/readout/scales for this branch.
 
 ## Global Constraints
 
-- Frozen CLIP `openai/clip-vit-large-patch14` revision32bd64288804d66eefd0ccbe215aa642df71cc41: global S²224/448→2048; left_hand/right_hand/mouth single224raw hidden CLS→1024each.
+- Frozen `google/siglip2-so400m-patch14-384` revisione8e487298228002f3d8a82e0cd5c8ea9c567f57f: global384/768native attention-pooled views→2304; left_hand/right_hand/mouth single384pooled1152each. No CLS token; pinned config declares fixed-resolution `siglip`, not NaFlex.
 - Hierarchical local fusion, then global/local fusion in768channels; one shared768→2048/GELU→2048connector and FLAN-T5-XL revision7d6315df2c2fb742f0f5b556879d730926ca9001.
 - One RVLF-inspired fine-grained contrastive loss on fused output, not separate branch losses; raw FLAN target embeddings, masked attention and multi-positive duplicate references.
 - Global/local support must derive from original frame/window indices and temporal receptive fields. Existing global concatenation cannot be aligned by row number/equal lengths.
@@ -24,7 +25,7 @@
 
 ## Review Focus
 
-1. Crop/frame/left-right identity errors or stale detections can create false local evidence; reject them and maintain zero invalid features (Task2/3).
+1. Crop/frame/left-right identity errors, stale detections or CLIP CLS assumptions can create false features; validate native SigLIP pooling and zero invalid regions (Task2/3).
 2. Global modality-boundary tokens have noncontiguous source support; equal-length interpolation or min/max envelopes must not leak unmatched local evidence (Task5).
 3. Padded tokens, duplicate captions and extreme temperatures can break fine-grained contrastive loss or negatives; masks/multi-positive denominators must be correct and finite (Task4).
 4. Biases/temporal normalization can produce nonzero missing-local outputs or change global buffers; fallback must be exact and gradient-isolated (Task5).
@@ -49,7 +50,7 @@ Create modules with these responsibilities:
 | --- | --- |
 | `tools/global_local/config.py`, `runtime.py` | Strict portable inputs, source/storage/owner guards |
 | `tools/global_local/regions.py` | Versioned detector-output admission and deterministic crops/tracks |
-| `tools/global_local/extract.py` | CLIP global/local features and verified package publication |
+| `tools/global_local/extract.py`, `tools/global_local/vision/{pyproject.toml,uv.lock}` | SigLIP global/local features in isolated supported runtime, verified publication |
 | `src/despamo/data/global_local.py` | Region masks/confidence/timing batches and content provenance |
 | `src/despamo/losses/fine_grained_vt.py` | All-pair segment/token matching and one contrastive objective |
 | `src/despamo/models/global_local.py` | Hierarchical local branch, support alignment, residual gate/connector |
@@ -81,19 +82,19 @@ left_hand/right_hand/mouth; validity/confidence/frame boxes and tracking provena
 - [ ] Freeze detector/config SHA and parameters before full extraction. Review sample train overlays for identity/crop geometry without fabricating human annotations or changing captions. Missing regions remain invalid, not backfilled as reliable.
 - [ ] Run GREEN and record probe/source evidence; provider availability is an execution prerequisite, not an assumed implemented detector.
 
-### Task3: Shared frozen CLIP extraction and aligned batches
+### Task3: Shared frozen SigLIP 2 extraction and aligned batches
 
-**Interfaces:** `extract_global(frames, encoder, processor) -> ndarray[N,2048]`;
-`extract_local(frames, regions, encoder, processor) -> (features[N,3,1024], valid[N,3], confidence[N,3])`;
+**Interfaces:** `extract_global(frames, encoder, processor) -> ndarray[N,2304]`;
+`extract_local(frames, regions, encoder, processor) -> (features[N,3,1152], valid[N,3], confidence[N,3])`;
 `GlobalLocalBatch` extends existing tensors with local fields and source support;
 `admit_packages(inputs) -> dict` and `batch_for(...) -> GlobalLocalBatch`.
 
-- [ ] RED: Test raw hidden CLS versus pooler/projection, global S² aggregation, local single-scale output, left/right/mouth channel order, batch tails and invalid-feature zeros. Distinct sentinel package roots must prove all tensors load from configured roots.
+- [ ] RED: Test native1152attention-pool output versus wrong first-patch/mean-patch lookup, global2304concat order at384/768, local single384output, anatomical channel order, batch tails and invalid zeros. Validate fixed-resolution pixel shape and pinned Siglip-compatible dispatch; do not force NaFlex processor/masks. Sentinel roots prove configured loading.
 - [ ] Run `tools/global_local/tests/test_extraction.py` and `tests/unit/data/test_global_local_batch.py`; expect missing implementation failures.
-- [ ] Implement exact pinned CLIP processing from frozen-CLIP/S² plan; processor metadata at same revision must exist and be hashed. Share one frozen encoder instance. Bind frame/crop/model/precision/batching/provider fingerprints, canonical source indices/content and host-local path mapping separately.
-- [ ] Explicitly pin Pillow/image decoding dependencies in the selected extraction environment using existing uv configuration; main cached-feature lock does not include Pillow. Verify processor parity after dependency resolution; never silently import another environment's packages.
+- [ ] Implement pinned SigLIP processor/native vision pooling from amendment, with metadata/weights hashed at exact revision. Process384once, bicubic normalized tensor to768, encode four384tiles, average native pooled vectors and concatenate base+tile mean. Share frozen vision encoder/head; do not use SigLIP text tower for VT supervision.
+- [ ] Create separate extraction uv project/lock; supported starting stack Torch2.5.1/Transformers4.56.2/Pillow11.3/NumPy1.26.4 must pass exact-checkpoint smoke before acceptance. Main4.32runtime/lock remains unchanged. Run HF-dependent image tests there; main CPU suite must not import unavailable SigLIP classes eagerly.
 - [ ] Publish arrays and receipts atomically; completion only after8257clip/947756frame verification. Preserve ambiguous crash artifacts. Reuse transferred VideoMAE only after array/window/frame provenance checks; rebind paths in new receipts without editing originals.
-- [ ] Run GREEN, one-clip real extraction smoke and independent global-S² parity test, then profile and verify complete extraction before training. GPU work occurs only on intended server after ownership/storage checks.
+- [ ] Run GREEN, real single-view parity against checkpoint's native vision pooling, independent384/768aggregation and one-clip extraction smoke; then profile memory/full publication. Old CLIP CLS parity is historical, not a SigLIP acceptance oracle. Recalculate20.34GiBglobal/local array demand and new profiles/identities before training.
 
 ### Task4: Single fine-grained visual/text contrastive loss
 
@@ -119,6 +120,7 @@ left_hand/right_hand/mouth; validity/confidence/frame boxes and tracking provena
 - [ ] RED: All local missing yields bitwise baseline equality in train/eval and identical global buffers, with zero local gradients. Partial missing clips never leak another batch item's regions. Common global/FLAN initialization fingerprint is identical across variants.
 - [ ] Run `tests/unit/models/test_global_local_adapter.py`; expect missing implementation failures.
 - [ ] Implement local modules in forked RNG context, post-temporal/alignment hard masks, support-overlap weighting and shared output connector. Fixed/gated residuals start at same small contribution (reviewed0.1 default); learned gate consumes G/L plus explicit reliability, not confidence alone. No per-region adaptive gate in initial ablation.
+- [ ] Build new global spatial MLP2304→1024/GELU→768 and local1152→768projections. Preserve motion1024→768, internal768and shared2048FLAN width. Legacy factories/backbone validators hardcode2048spatial input; do not reuse them unchanged or pad/truncate new features. Match fresh initialization across SigLIP variants.
 - [ ] Run GREEN and real joint/backward smoke, proving local fusion, temporal path, gate and alignment all receive finite gradients when valid. Confirm no visual BatchNorm recomputation under transformer activation checkpointing.
 
 ### Task6: Profile, full-state replay and dev-only study
