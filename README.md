@@ -1,5 +1,24 @@
 # DeSpaMo
 
+## Global/local experiment branch
+
+`feat/global-local-rvlf` contains the current reference/fusion training source
+snapshot plus the approved design and implementation plan for a separate-server
+global/local experiment. Frozen CLIP ViT-L/14 supplies global S² features and
+single-scale hand/mouth crop features; FLAN-T5-XL remains the decoder. The planned
+model combines local regions first, fuses local/global temporal features, and
+uses one fine-grained visual-text alignment loss on the fused representation.
+
+Start with [other-server handoff](docs/global-local-server-handoff.md),
+[architecture specification](docs/superpowers/specs/2026-10-10-global-local-rvlf-design.md)
+and [Superpowers implementation plan](docs/superpowers/plans/2026-10-10-global-local-rvlf.md).
+The new model/extractor/loss are not implemented yet; baseline source is included
+so another server can implement and test them without touching the live original
+study. Historical reproduction sections below do not override this branch scope.
+Datasets, model weights, feature caches and checkpoints are transferred/prepared
+separately, never through Git. Legacy `tools/followup/` controllers retain their
+original-host paths; use the new portable entrypoints after implementing the plan.
+
 ## PHOENIX14T Data And Checkpoint Preparation
 
 SpaMo annotations, spatial features, and motion features cover 7,096 train, 519 dev,

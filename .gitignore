@@ -26,7 +26,14 @@ wheels/
 *.pth
 *.npy
 *.npz
+*.safetensors
+*.bin
+*.zip
 artifacts/
 logs/
 outputs/
 configs/local.yaml
+
+# Local navigation links; keep original immutable artifact paths unchanged.
+external-data
+recovery-worktree

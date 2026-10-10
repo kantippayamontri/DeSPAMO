@@ -51,6 +51,8 @@ def test_e3_preflight_requires_exact_signer07_inventory(tmp_path, monkeypatch):
 def test_e3_heldout_run_writes_once_with_checkpoint_provenance(tmp_path, monkeypatch):
     args, ids = _args(tmp_path, monkeypatch)
     args.mode = "run"
+    # Scoring is replaced below; exercise CLI publication without requiring a GPU.
+    monkeypatch.setattr(cli.torch.cuda, "is_available", lambda: True)
     calls = []
 
     def score(run, view, expected_ids, split_hash):

@@ -54,6 +54,8 @@ def test_preflight_requires_768_signer07_clips_and_writes_nothing(tmp_path, monk
 def test_run_writes_ordered_paired_reports_once(tmp_path, monkeypatch):
     args, ids = _setup(monkeypatch, tmp_path)
     args.mode = "run"
+    # Fake scorers test CLI report behavior, not CUDA execution.
+    monkeypatch.setattr(cli.torch.cuda, "is_available", lambda: True)
     events = []
 
     def fake_score(variant, run, view, expected_ids, split_hash):
@@ -84,6 +86,7 @@ def test_run_writes_ordered_paired_reports_once(tmp_path, monkeypatch):
 def test_pair_rejects_reference_drift_without_summary(tmp_path, monkeypatch):
     args, ids = _setup(monkeypatch, tmp_path)
     args.mode = "run"
+    monkeypatch.setattr(cli.torch.cuda, "is_available", lambda: True)
 
     def fake_score(variant, run, view, expected_ids, split_hash):
         return {"split": "test", "split_hash": split_hash,
@@ -115,6 +118,7 @@ def test_factor_provenance_accepts_expanded_checkpoint_metadata():
 def test_resume_keeps_verified_e1_score_and_only_scores_e2(tmp_path, monkeypatch):
     args, ids = _setup(monkeypatch, tmp_path)
     args.mode = "run"
+    monkeypatch.setattr(cli.torch.cuda, "is_available", lambda: True)
     args.output.mkdir()
     e1_report = {
         "split": "test", "split_hash": "frozen-split", "checkpoint_hash": "e1-hash",

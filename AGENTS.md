@@ -1,5 +1,38 @@
 # DeSpaMo Project Instructions
 
+## Global/local experiment branch
+
+- Branch: `feat/global-local-rvlf`. Read `docs/global-local-server-handoff.md`,
+  `docs/superpowers/specs/2026-10-10-global-local-rvlf-design.md`, then
+  `docs/superpowers/plans/2026-10-10-global-local-rvlf.md` before implementation.
+- This branch publishes tested baseline source and an approved architecture for
+  implementation on another server. The global/local model and fine-grained loss
+  are not implemented yet. Do not label baseline tests as new-method results.
+- Approved extractors: frozen CLIP ViT-L/14 for global S²224/448 and single-scale
+  224 left-hand/right-hand/mouth crops; existing VideoMAE motion. Mouth replaces
+  full-face stream. No skeleton encoder, Qwen or CLIP adaptation in this stage.
+- Hierarchical local fusion first, then global/local fusion in768channels, one
+  shared2048channel connector into FLAN-T5-XL. One RVLF-inspired fine-grained
+  visual/text contrastive loss on fused output, plus translation CE.
+- Use explicit source-frame support for temporal alignment. Existing global
+  adapter concatenates spatial/motion tokens; equal sequence lengths or token row
+  numbers do not establish matching times. Invalid local evidence must contribute
+  zero after projections, temporal encoding and alignment; exact global fallback.
+- Compare global-only, fixed local residual and confidence-aware local residual
+  using the same local encoder, loss, masks, decoder and recipe. Train/development
+  data only for optimization/selection; no new automatic test scoring.
+- Existing `tools/followup/` and `tools/benchmark/` are historical same-recipe
+  source references with original-host paths. New portable `tools/global_local/`
+  entrypoints must not launch those legacy controllers on another server.
+- Use existing uv locks and separate motion/DINO environments if those tools are
+  needed. CPU verification: `PYTHONPATH=src:. CUDA_VISIBLE_DEVICES=""
+  HF_HUB_OFFLINE=1 OMP_NUM_THREADS=2 uv run --locked pytest tests/unit -q`.
+- Local original-host six-run training continues separately. Do not edit its
+  retained worktree/main source, model/feature bytes, locks or environment.
+- Preserve all unrelated work and checkpoint provenance. No artifact deletion,
+  secret/model/dataset publication, merge or extra training without appropriate
+  user scope. Commit/push only intended branch files when explicitly requested.
+
 ## Qwen Appearance Supervision (2026-09-28 Decision)
 
 - The user does **not require human verification** of LLM-generated appearance descriptions before exploratory DeSpaMo training. Use the versioned `qwen-schema98-unreviewed-v1` policy instead of the older mandatory-human training gate.

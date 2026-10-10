@@ -1,0 +1,11 @@
+{
+  "extraPaths": ["src", "."],
+  "include": [
+    "src/despamo/models/aligned_fusion.py",
+    "src/despamo/models/connector_adapter.py",
+    "src/despamo/models/visual_adapter.py",
+    "tools/benchmark/compact_checkpoint.py",
+    "tools/benchmark/translation_model.py",
+    "tools/followup"
+  ]
+}

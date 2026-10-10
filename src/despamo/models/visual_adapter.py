@@ -39,6 +39,10 @@ class SpaMoVisualAdapter(nn.Module):
         lengths = torch.tensor([item.shape[0] for item in fused], device=spatial.device)
         padded = pad_sequence(fused, batch_first=True)
         encoded, output_lengths = self.temporal_encoder(padded.transpose(1, 2), lengths)
-        tokens = self.multimodal_projector(encoded)
-        mask = lengths_to_mask(output_lengths, tokens.shape[1], tokens.device)
-        return tokens, mask
+        valid = lengths_to_mask(output_lengths, encoded.shape[1], encoded.device)
+        return self._project_tokens(encoded, valid)
+
+    def _project_tokens(
+        self, encoded: torch.Tensor, valid: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        return self.multimodal_projector(encoded), valid
