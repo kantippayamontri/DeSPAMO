@@ -206,7 +206,8 @@ class StepTimer(pl.Callback):
 
 class FullDevCheckpoints(pl.Callback):
     def __init__(
-        self, dev, expected, split_hash, output, steps, warmup, batch_size, variant, ledger=None
+        self, dev, expected, split_hash, output, steps, warmup, batch_size, variant, ledger=None,
+        checkpoint_schedule=None,
     ):
         super().__init__()
         self.loader = DataLoader(
@@ -222,7 +223,15 @@ class FullDevCheckpoints(pl.Callback):
         self.output = output
         self.variant = variant
         self.ledger: E1Ledger | None = ledger
-        self.steps = checkpoint_steps(steps, warmup)
+        if checkpoint_schedule is None:
+            self.steps = checkpoint_steps(steps, warmup)
+        else:
+            schedule = tuple(checkpoint_schedule)
+            if (len(schedule) != 3 or any(type(step) is not int for step in schedule)
+                    or tuple(sorted(set(schedule))) != schedule
+                    or schedule[0] <= warmup or schedule[-1] != steps):
+                raise ValueError("explicit dev checkpoint schedule invalid")
+            self.steps = schedule
         self.completed = set()
 
     def on_train_start(self, trainer, pl_module):

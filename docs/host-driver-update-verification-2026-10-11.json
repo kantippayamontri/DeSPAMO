@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "inspection_utc": "2026-10-11T07:14:43.985409Z",
+  "status": "user_driver_update_and_reboot_verified_gpu_validation_pending",
+  "change_performed_by": "user",
+  "user_installer_screenshot": {
+    "channel": "GeForce Game Ready Driver",
+    "version": "617.42",
+    "displayed_release_date": "2026-10-06",
+    "installation_finished": true
+  },
+  "read_only_windows_verification": {
+    "device_name": "NVIDIA GeForce RTX 4090",
+    "previous_driver_version": "32.0.16.1062",
+    "current_driver_version": "32.0.16.1742",
+    "current_nvidia_version": "617.42",
+    "inf_name": "oem14.inf",
+    "signed": true,
+    "windows_caption": "Microsoft Windows 11 Home",
+    "windows_version": "10.0.26200",
+    "windows_boot_utc": "2026-10-11T07:11:43.5000000Z",
+    "post_boot_matching_critical_error_events": 0,
+    "event_scope": "System log since current Windows boot; levels 1/2; providers nvlddmkm, Display, Microsoft-Windows-WER-SystemErrorReporting, and Kernel-Power event41"
+  },
+  "wsl_boot": {
+    "previous_boot_id": "c81d680c-fc38-4494-b0ea-a91e30b524c8",
+    "current_boot_id": "21ceb469-0d6b-494a-b4fa-dd12d94f2931"
+  },
+  "containment": {
+    "manual_stop_status": "stopped_by_user",
+    "automatic_recovery_disabled": true,
+    "gpu_validation_approved": false,
+    "matching_clip_study_train_inference_watchdog_processes_found": 0,
+    "last_durable_resume_epoch": 2,
+    "last_durable_updates": 1774,
+    "gpu_compute_performed_by_agent": false,
+    "manual_stop_receipt_modified": false,
+    "test_scored": false
+  },
+  "assessment": "Read-only Windows driver registration and changed Windows/WSL boot identities confirm the user-reported update and reboot. A short idle period without matching logged errors does not validate GPU workload stability or prove the crash fixed. No bounded GPU validation is approved or performed.",
+  "next": "Request explicit approval for one bounded cache-enabled batch1 dev diagnostic with memory/timing telemetry. Preserve training/controller hold and original retained checkpoint identities."
+}

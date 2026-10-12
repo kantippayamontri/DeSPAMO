@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "status": "long_run_authorized_retention_permission_pending",
+  "user_authorization": "I want to train long run: continue current Seed0 under max200/min40/patience10/minDelta0.10 plan with automatic sequential train/dev",
+  "inspection_utc": "2026-10-12T08:28:28.6630947Z",
+  "binding_hash": "8298146c075786430d31bd06e8f61bd18b612f2e5b373d6e254d88ed728aeb2f",
+  "start_step": 5322,
+  "selected_epoch": 6,
+  "charged_seconds": 6430.341189303363,
+  "ce_guard_window": 200,
+  "ce_guard_mean": 3.3297115528583525,
+  "max_epoch": 200,
+  "min_epoch": 40,
+  "patience_dev_checks": 10,
+  "min_delta_bleu4": 0.1,
+  "remaining_update_cap": 172078,
+  "remaining_dev_check_cap": 97,
+  "remaining_dev_clip_cap": 50343,
+  "storage": {
+    "C_free_bytes": 93611237376,
+    "B_free_bytes": 957101850624,
+    "reserve_bytes": 53687091200,
+    "current_resume_bytes": 241555525,
+    "current_candidate_bytes": 80417359,
+    "full_retention_future_payload_floor_bytes": 54662255673,
+    "full_retention_floor_excludes": ["new selected copies", "telemetry and journals", "atomic staging", "metadata"],
+    "existing_no_pruning_guard_passed": false,
+    "existing_latest2_owned_pruning_guard_passed": true,
+    "latest2_native_guard_projected_bytes": 814213220,
+    "pruning_not_yet_authorized": true
+  },
+  "retention_review": {
+    "current_safe_runtime_resumes": [2661, 3548, 4435, 5322],
+    "currently_older_than_latest2_payload_bytes": 407106930,
+    "proposed": "Use existing verified-publication/archival pruning path: keep latest2 safe-runtime full resumes, delete older safe-runtime full resumes; retain all dev candidates/selections and original epoch1/2 anchors",
+    "runtime_source_change_required": false,
+    "actual_pruning_performed": false
+  },
+  "containment": {"gpu_launched": false, "scope_receipt_created": false, "budget_modified": false, "checkpoint_deleted": false, "source_modified": false, "restart_from_zero": false, "official_test_scored": false, "extra_seed_authorized": false, "automatic_retry_authorized": false},
+  "next": "Obtain specific older safe-runtime resume deletion permission before enabling existing rolling latest2 retention and admitting continuous long-run scope."
+}

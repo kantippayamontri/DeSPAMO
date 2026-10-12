@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "status": "both_kernel_dumps_analyzed_gpu_hold_retained",
+  "authorization": "User selected Install WinDbg (Recommended), approving official debugger installation and local CPU-only crash analysis.",
+  "debugger": {
+    "package": "Microsoft.WinDbg",
+    "version": "1.2610.1001.0",
+    "installation": "Official documented WinGet package; installer hash verified",
+    "analysis_tool": "bundled amd64/kd.exe through native Windows PowerShell",
+    "symbol_server": "https://msdl.microsoft.com/download/symbols",
+    "symbol_cache": "B:\\DeSpaMo\\diagnostics\\gpu-crashes-2026-10-11\\symbols",
+    "kernel_image_version": "10.0.26100.9457"
+  },
+  "results": [
+    {
+      "dump": "101126-13859-01.dmp",
+      "dump_sha256": "c71bbbb17e54c07040b19c4368c32160c24539b543f1da303af704bcae0cfe07",
+      "log": "B:\\DeSpaMo\\diagnostics\\gpu-crashes-2026-10-11\\analysis-symbols-13859.txt",
+      "log_sha256": "0bad06ad0f46a1cf390cb3bf5d0f99d655d9623c893df5d6687367f2878f054f",
+      "MODULE_NAME": "nvlddmkm",
+      "IMAGE_NAME": "nvlddmkm.sys",
+      "FAILURE_BUCKET_ID": "0x116_IMAGE_nvlddmkm.sys",
+      "PROCESS_NAME": "System",
+      "SYMBOL_NAME": "nvlddmkm+1958210",
+      "bugcheck": "0x116",
+      "last_operation_status": "0xC000009A"
+    },
+    {
+      "dump": "101126-9468-01.dmp",
+      "dump_sha256": "1cec95a8a630a8b96a5100aa45de74a6146592ef21f1d0388f18afef69487824",
+      "log": "B:\\DeSpaMo\\diagnostics\\gpu-crashes-2026-10-11\\analysis-symbols-9468.txt",
+      "log_sha256": "5515e5e3468f8eec716d775cc6f585be4b820d3abd00466af75e477d5f5902ec",
+      "MODULE_NAME": "nvlddmkm",
+      "IMAGE_NAME": "nvlddmkm.sys",
+      "FAILURE_BUCKET_ID": "0x116_IMAGE_nvlddmkm.sys",
+      "PROCESS_NAME": "System",
+      "SYMBOL_NAME": "nvlddmkm+1958210",
+      "bugcheck": "0x116",
+      "last_operation_status": "0xC000009A"
+    }
+  ],
+  "shared_kernel_stack": [
+    "nt!KeBugCheckEx",
+    "dxgkrnl!TdrBugcheckOnTimeout+0x101",
+    "dxgkrnl!ADAPTER_RENDER::Reset+0x12d",
+    "dxgkrnl!DXGADAPTER::Reset+0x58a",
+    "dxgkrnl!TdrResetFromTimeout+0x15",
+    "dxgkrnl!TdrResetFromTimeoutWorkItem+0x22",
+    "nt!ExpWorkerThread+0x3db",
+    "nt!PspSystemThreadStartup+0x5a",
+    "nt!KiStartSystemThread+0x34"
+  ],
+  "current_driver_file_version": "32.0.16.1062",
+  "nvidia_marketing_version": "610.62",
+  "nvidia_private_symbols_unavailable": true,
+  "interpretation": "Both dumps identify the same NVIDIA driver module/owner offset and Windows graphics timeout-recovery stack. System process is the Windows reset worker, not proof Python was absent. This confirms failed NVIDIA GPU reset as reboot mechanism; it does not identify an exact CUDA kernel, establish driver-only versus hardware cause, or prove cache mitigation prevents TDR.",
+  "discarded_initial_analysis": "Initial malformed symbol-command path produced WRONG_SYMBOLS/nt_wrong_symbols artificial buckets. These are invalid and excluded. Correct explicit Microsoft symbol path plus separate command file yielded valid kernel stacks in both final logs.",
+  "driver_runtime_or_tdr_settings_changed": false,
+  "debugger_installed": true,
+  "gpu_compute_launched": false,
+  "dumps_uploaded": false,
+  "training_or_watchdog_restarted": false,
+  "gpu_validation_approved": false,
+  "gpu_hold_active": true,
+  "next": "Review NVIDIA/WSL/driver host mitigation before releasing bounded cached batch1 validation. Successful debugger installation/dump analysis alone is not driver remediation."
+}

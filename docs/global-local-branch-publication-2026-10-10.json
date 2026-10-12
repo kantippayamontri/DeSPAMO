@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "status": "committed_pushed_remote_verified",
+  "authorization": "User requested a separate branch pushed for another server to develop the global/local experiment, then approved frozen CLIP for all local crops and enabled build mode.",
+  "remote": "git@github.com:kantippayamontri/DeSPAMO.git",
+  "branch": "feat/global-local-rvlf",
+  "commit": "90cf77eedef95be355b3103963cf244b30b8dace",
+  "url": "https://github.com/kantippayamontri/DeSPAMO/tree/feat/global-local-rvlf",
+  "worktree": "/home/kan/Research/DeSpaMo/.superpowers/sdd/2026-10-10-global-local-rvlf/worktree",
+  "base_commit": "ebb0f6bb853eee3d3ec410dddcb386777b7eff2d",
+  "verified_at_utc": "2026-10-10T14:02:54Z",
+  "published_scope": "Tested current baseline source and dependencies, approved global CLIP/S2 and single-scale hand/mouth architecture, implementation plan and other-server handoff. New global/local model and fine-grained loss remain for implementation on destination server.",
+  "files_in_commit": 57,
+  "changed_file_payload_bytes": 667474,
+  "tests": {
+    "main_unit_passed": 848,
+    "main_unit_skipped": 4,
+    "focused_baseline_passed": 313,
+    "focused_baseline_skipped": 3,
+    "test_sets_overlap": true,
+    "cuda_disabled_for_verification": true,
+    "ruff_scoped_passed": true,
+    "targeted_pyright_errors": 0
+  },
+  "isolated_test_fixture_fix": "Four legacy mock-scoring CLI tests now mock CUDA availability; production held-out guards unchanged. Synthetic tests did not score real held-out data.",
+  "root_uv_lock_and_pyproject_unchanged": true,
+  "no_model_dataset_checkpoint_or_secret_payloads_added": true,
+  "original_main_branch_and_head_unchanged": true,
+  "live_study_source_closures_verified_unchanged": true,
+  "local_study_controller_status_at_verification": "running",
+  "local_study_controller_pid": 3427,
+  "new_global_local_training_launched": false
+}

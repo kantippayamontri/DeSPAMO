@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "status": "cpu_code_audit_complete_initial_gpu_root_cause_unresolved",
+  "report": "docs/dev-generation-code-audit-2026-10-11.md",
+  "script": "docs/diagnostics/dev-generation-cpu-audit-2026-10-11.py",
+  "script_sha256": "cdf9c4746e03efb5b54f39fe288c6da44e4b6884108ac59ef76ce07f7d79dfc0",
+  "native_root": "/home/kan/datasets/despamo/official-phoenix14t-translation-clip-s2-spamo200-v3/diagnostics/dev-generation-code-audit-2026-10-11",
+  "native_artifact_sha256": {
+    "features.json": "2c6bae684df8008b91a585ca591529a96365b0fafcf7e994de90c56c85ef5197",
+    "decoder.json": "7864f186567f6c42ba9e168ff922b893987073fe80329429fa21f19f4600ede5",
+    "cleanup.json": "7cb1cffbb65fea00a411737f1ffde38d684a750e15fec16cb64af13b354c2737"
+  },
+  "original_primary_error_surface": "Transformers4.32.0 generation/utils.py:3057 torch.topk in beam_search",
+  "faulting_cuda_kernel_identified": false,
+  "confirmed_cleanup_defect": {
+    "unconditional_cuda_rng_restore_after_generation_error": true,
+    "injected_actual_score_dev_probe_passed": true,
+    "secondary_error_becomes_propagated_exception": true,
+    "primary_preserved_in_exception_context": true,
+    "shared_by_dino_runner": true,
+    "initial_gpu_crash_cause_proven": false
+  },
+  "cache_probe": {
+    "tiny_real_t5_bf16_cpu": true,
+    "batch_size": 4,
+    "beam_size": 5,
+    "vocabulary_size": 32128,
+    "forced_output_length": 8,
+    "uncached_decoder_token_positions": 560,
+    "cached_decoder_token_positions": 140,
+    "generated_ids_equal": true,
+    "uncached_last_logit_slice_contiguous": false,
+    "cached_last_logit_slice_contiguous": true,
+    "topk_input_shape": [4, 160640],
+    "topk_dtype": "torch.float32",
+    "k": 10,
+    "600_token_encoder_finite": true,
+    "gpu_stability_proven": false
+  },
+  "adapter_sweep": {
+    "device": "cpu",
+    "autocast_dtype": "bfloat16",
+    "checkpoint_updates_each": 1774,
+    "own_checkpoint_per_feature_set": true,
+    "full_flan_generation_run": false,
+    "clip": {
+      "dev_clips": 519,
+      "batches": 130,
+      "nonfinite_input_batches": 0,
+      "nonfinite_visual_batches": 0,
+      "invalid_masks": 0,
+      "spatial_absmax": 7.039008140563965,
+      "visual_absmax": 6.5625
+    },
+    "dino": {
+      "dev_clips": 519,
+      "batches": 130,
+      "nonfinite_input_batches": 0,
+      "nonfinite_visual_batches": 0,
+      "invalid_masks": 0,
+      "spatial_absmax": 2.4294681549072266,
+      "visual_absmax": 3.71875
+    },
+    "max_spatial_frames_each": 272,
+    "fixed_dev_prompt_tokens_each": 146,
+    "visual_token_range_each": [1, 73],
+    "max_joint_tokens_each": 219,
+    "max_prompt_token_id_each": 30355,
+    "spatial_input_defect_found": false,
+    "gpu_numerical_behavior_ruled_out": false
+  },
+  "memory_leak_established": false,
+  "per_batch_failure_localization_missing": true,
+  "gpu_compute_or_diagnostics_performed": false,
+  "checkpoint_bound_source_modified": false,
+  "gpu_hold_retained": true,
+  "gpu_permission_revoked": true,
+  "next": "Compatible cached batch1 evaluator with per-batch telemetry and error-safe abort; any GPU kernel-localization or longer-clip diagnostic requires a new reviewed scope."
+}

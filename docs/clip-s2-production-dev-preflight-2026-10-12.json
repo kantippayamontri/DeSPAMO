@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "status": "blocked_before_gpu_launch",
+  "user_authorization": "Production epoch2 safe-dev admission:519clips at original1774; no training or probe adoption",
+  "inspection_utc": "2026-10-12T03:14:20.2298995Z",
+  "binding_hash": "396f3b82ea598c73659097b63d884ed3ad279b412e6144dc2f037c8ad7f3687e",
+  "source_files_verified": 93,
+  "original_identity_verified": true,
+  "production_completed_updates": 1774,
+  "charged_seconds": 635.3917769574764,
+  "production_anchor_dev_gate_exists": false,
+  "anchor_bytes": 203553305,
+  "storage": {
+    "production_projection_native_bytes": 41117767610,
+    "backing_reserve_bytes": 53687091200,
+    "required_backing_bytes": 94804858810,
+    "linux_free_bytes": 281243959296,
+    "C_free_bytes": 54784323584,
+    "B_free_bytes": 983850000384,
+    "guard_result": "ValueError: native/backing free space below projected demand plus50GiB reserve",
+    "reason": "Frozen production evaluator projects full-study checkpoints even for dev-only scope."
+  },
+  "windows_boot_utc": "2026-10-11T08:25:42.6825970Z",
+  "driver_version": "32.0.16.1742",
+  "containment": {
+    "gpu_launched": false,
+    "scope_receipt_created": false,
+    "budget_mutated": false,
+    "checkpoint_adopted": false,
+    "runtime_source_modified": false,
+    "storage_guard_bypassed": false,
+    "pruning_permission_inferred": false
+  },
+  "next": "Free backing space for unchanged projection, or explicitly approve dev-only projection correction, CPU verification and deliberate runtime re-admission."
+}

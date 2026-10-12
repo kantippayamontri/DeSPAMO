@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "policy": "official-phoenix14t-merged-dino-adaptation-v1",
+  "seed": 0,
+  "inputs": {
+    "train_annotation": "/home/kan/Research/SpaMo/preprocess/Phoenix14T/train_info_ml.npy",
+    "dev_annotation": "/home/kan/Research/SpaMo/preprocess/Phoenix14T/dev_info_ml.npy",
+    "test_annotation": "/home/kan/Research/SpaMo/preprocess/Phoenix14T/test_info_ml.npy",
+    "source": "/home/kan/datasets/despamo/appearance/datasets/b4d52678db150326ce22d1b73811883a99ec2b8100f258e3690b4d90a004297a/source.json",
+    "merged_manifest": "/home/kan/datasets/despamo/official-phoenix14t-dino-adaptation-v1/targets/662471b90eabac7b37044c201541406c084986b646e15e2e119dd667635c7452/manifest.json",
+    "merged_manifest_sha256": "ebb5e1000a00eedb18243e364e1423925db0096d835819dd617a480752c3f554",
+    "teacher_root": "/home/kan/datasets/despamo/features/1e84e43d142abc6242cce75c3e65abe9e1e03a6c61e3770181d7be381f3bc31d",
+    "frames_root": "/home/kan/datasets/despamo/phoenix-frames-210x260px",
+    "model_cache": "/home/kan/datasets/despamo/hf_cache"
+  },
+  "model": {
+    "name": "facebook/dinov3-vitl16-pretrain-lvd1689m",
+    "revision": "ea8dc2863c51be0a264bab82070e3e8836b02d51",
+    "lora_rank": 8,
+    "lora_alpha": 8,
+    "lora_blocks": [20, 21, 22, 23],
+    "lora_targets": ["q", "v"],
+    "sampled_frames": 5,
+    "resolutions": [224, 448]
+  },
+  "schedule": {
+    "train_clips": 7096,
+    "batch_size": 24,
+    "epochs": 40,
+    "calibration_epochs": 5,
+    "lora_warmup_epochs": 2,
+    "grl_ramp_epochs": 2,
+    "checkpoint_epochs": 10
+  },
+  "optimizer": {
+    "name": "AdamW",
+    "lora_lr": 0.00001,
+    "head_lr": 0.00003,
+    "betas": [0.9, 0.999],
+    "epsilon": 0.00000001,
+    "weight_decay": 0.05,
+    "gradient_clip_norm": 1.0
+  },
+  "losses": {
+    "temperature": 0.07,
+    "nuisance_factor_weight": 0.05,
+    "articulator_factor_weight": 0.10,
+    "reference_weight": 0.10,
+    "relational_weight": 0.10
+  },
+  "precision": "bf16",
+  "loss_precision": "float32",
+  "drop_last": true,
+  "resume_retention": 2,
+  "duration_limit_seconds": null,
+  "working_root": "/home/kan/datasets/despamo/official-phoenix14t-dino-adaptation-v1",
+  "archive_root": "/mnt/b/DeSpaMo/archives/official-phoenix14t-dino-adaptation-v1",
+  "reserve_bytes": 53687091200,
+  "supervision_policy": "qwen-stable-v1-crop-articulators-v2-unreviewed-v1",
+  "human_review_status": "not_assessed"
+}

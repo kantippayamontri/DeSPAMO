@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "status": "reviewed_for_epoch2_dev_only",
+  "inspection_utc": "2026-10-12T03:31:15.0676259Z",
+  "user_authorization": "do it; approve dev-only storage correction and deliberate re-admission, followed by519clip production epoch2 safe dev at1774",
+  "windows_boot_utc": "2026-10-11T08:25:42.6825970Z",
+  "wsl_boot_id": "a25da066-fad8-4652-92f2-4d30dd670f2c",
+  "driver_version": "32.0.16.1742",
+  "driver_display_version": "617.42",
+  "gpu_audio_problem_code": 0,
+  "matching_fault_events_since_2026_10_12_0314_utc": 0,
+  "C_free_bytes": 54781923328,
+  "B_free_bytes": 983850000384,
+  "backing_reserve_bytes": 53687091200,
+  "dev_only_native_projection_bytes": 677768779,
+  "dev_only_archive_projection_bytes": 203553305,
+  "runtime_binding": "8298146c075786430d31bd06e8f61bd18b612f2e5b373d6e254d88ed728aeb2f",
+  "scope": {"train_updates": 0, "dev_clips": 519, "batch_size": 1, "use_cache": true, "beam_size": 5, "max_length": 64},
+  "root_cause_proven": false,
+  "device_changes_approved": false,
+  "long_training_approved": false,
+  "probe_adoption_approved": false
+}

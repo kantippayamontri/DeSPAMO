@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "status": "safe_cache_cleanup_complete_training_storage_still_blocked",
+  "user_request": "Free WSL space so Windows drive frees space too",
+  "vhd_path": "C:\\Users\\kanti\\AppData\\Local\\wsl\\{a83d506b-8a90-4175-a372-d34e90737c84}\\ext4.vhdx",
+  "vhd_sparse_attribute_already_enabled": true,
+  "vhd_sparse_setting_changed": false,
+  "actions": [
+    {"command": "wsl.exe -d Ubuntu-26.04 -u root -- fstrim -v /", "result": "Unused blocks trimmed; no files deleted by trim", "first_trim_reported_bytes": 312217579520},
+    {"command": "uv cache prune", "result": "Removed19028 unused cache files; tool reported3.1GiB"},
+    {"command": "npm cache clean --force", "result": "Download cache removed; installed packages and npx environments not targeted"},
+    {"command": "/home/kan/miniconda3/bin/conda clean --tarballs --yes", "result": "Removed759 compressed package archives; extracted packages/environments not targeted"},
+    {"command": "wsl.exe -d Ubuntu-26.04 -u root -- fstrim -v /", "result": "Post-cleanup trim succeeded", "second_trim_reported_bytes": 20888997888}
+  ],
+  "capacity": {
+    "before_windows_inspection_utc": "2026-10-12T05:26:38.1295875Z",
+    "before_C_free_bytes": 54327541760,
+    "after_windows_inspection_utc": "2026-10-12T05:29:44.7567742Z",
+    "after_C_free_bytes": 69380435968,
+    "C_reclaimed_bytes": 15052894208,
+    "before_linux_free_bytes": 281049661440,
+    "after_linux_free_bytes": 295168385024,
+    "training_required_backing_bytes": 94804858810,
+    "remaining_backing_shortfall_bytes": 25424422842
+  },
+  "verification": {
+    "main_runtime_import_exit": 0,
+    "torch": "2.0.1+cu117",
+    "transformers": "4.32.0",
+    "peft": "0.7.1",
+    "cuda_initialized": false,
+    "conda_compressed_archives_remaining": 0,
+    "npm_download_cache_removed": true
+  },
+  "containment": {
+    "training_launched": false,
+    "research_artifacts_deleted": false,
+    "checkpoint_model_feature_data_modified": false,
+    "installed_environment_modified": false,
+    "wsl_shutdown_or_offline_compaction": false,
+    "opencode_history_or_snapshots_deleted": false
+  },
+  "next_candidate_requires_specific_approval": {
+    "kind": "Relocate snapshot store to B: with verified copy and original-path link",
+    "source": "/home/kan/.local/share/opencode/snapshot/06f44bf96433c21f2fc83066c3bbf946d7ce47c5/df42c8f8e84cb624a97b0b37c7fa20202d01a32e",
+    "associated_project": "/home/kan/Research/CGU_SLT_Literature_review",
+    "approximate_GiB": 24.69,
+    "contains_rollback_snapshot_objects": true,
+    "no_process_with_project_cwd_observed": true,
+    "relocated": false
+  }
+}

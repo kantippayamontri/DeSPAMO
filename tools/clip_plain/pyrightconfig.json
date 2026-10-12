@@ -1,0 +1,8 @@
+{
+  "include": ["*.py"],
+  "exclude": ["tests"],
+  "extraPaths": ["../..", "../../../../../../src", "/home/kan/Research/DeSpaMo/src", "/home/kan/Research/DeSpaMo"],
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic",
+  "reportMissingTypeStubs": false
+}

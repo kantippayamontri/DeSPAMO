@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "status": "relocated_verified",
+  "native_source_removed_after_verified_archive": true,
+  "authorization": "User requested moving a large checkpoint file to B: drive.",
+  "source": "/home/kan/datasets/despamo/signer-pilot/connector-qformer-seed1-16000-c099b17106f2a4d14724e4ecf5969826aed573e77d7bf12775242533d87e901b/step-16000.ckpt",
+  "destination": "/mnt/b/DeSpaMo/archives/checkpoint-relocations-2026-10-10/connector-qformer-seed1-16000-c099b17106f2a4d14724e4ecf5969826aed573e77d7bf12775242533d87e901b/step-16000.ckpt",
+  "archive_receipt": "/mnt/b/DeSpaMo/archives/checkpoint-relocations-2026-10-10/connector-qformer-seed1-16000-c099b17106f2a4d14724e4ecf5969826aed573e77d7bf12775242533d87e901b/relocation.json",
+  "bytes": 6102377277,
+  "sha256": "2d775080d538c99c078e8056cf094e04f8c34299769952716760b817ef274818",
+  "selected_checkpoint_retained_native": "step-10400.ckpt",
+  "restore_before_historical_full_run_validation": true,
+  "active_spamo200_checkpoints_modified": false,
+  "linux_free_gib_after": 247.14891052246094,
+  "windows_c_free_gib_after": 55.69987869262695,
+  "archive_b_free_gib_after": 648.567268371582,
+  "study_resume": "blocked: Windows C remains below required56GiB; native deletion does not shrink the host WSL VHDX",
+  "wsl_shutdown_or_compaction_performed": false
+}

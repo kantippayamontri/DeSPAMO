@@ -8,6 +8,14 @@ evaluation finish. Adapted CLIP is a later decision based on dev evidence. This
 document records the accepted experiment design; implementation and launch are
 not part of the current documentation request.
 
+**2026-10-10amendment:** user subsequently approved immediate intentional stop of
+current watchdog/controller/worker, implementation/extraction and two-run CLIP
+launch in Build mode. This supersedes finish-six-and-test prerequisite below.
+Use verified predecessor manual stop/all owners exited as execution gate. All
+old weights/receipts/source/test claims remain intact. No predecessor test is
+scored. Only DINOseed0reference is complete; report seed1as unpaired rather than
+inventing baseline or adding unapproved DINO runs.
+
 Compare the spatial feature pipeline against matching adapted-DINO reference
 runs. The contrast changes encoder family, adaptation status, preprocessing and
 spatial extraction together. It cannot isolate adaptation or S² alone, prove

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "status": "relocated_verified",
+  "native_copies_replaced_after_verified_archive": true,
+  "authorization": "User requested searching for large project files and moving them to B: drive.",
+  "archive_receipt": "/mnt/b/DeSpaMo/archives/project-file-relocations-2026-10-10/relocation.json",
+  "total_bytes": 20728487672,
+  "total_gib": 19.304908506572247,
+  "files": [
+    {
+      "source": "/home/kan/datasets/spamo/features.zip",
+      "destination": "/mnt/b/DeSpaMo/archives/project-file-relocations-2026-10-10/spamo/features.zip",
+      "bytes": 13531413763,
+      "sha256": "4832d026e3cfe988e92fd419c18ddc216584a16246b1c416c37a22c4b0256aa3"
+    },
+    {
+      "source": "/home/kan/datasets/spamo/features/spa_feat_p14t.zip",
+      "destination": "/mnt/b/DeSpaMo/archives/project-file-relocations-2026-10-10/spamo/features/spa_feat_p14t.zip",
+      "bytes": 7197073909,
+      "sha256": "10e05b73a24e3666dbaf4d305323afac09ce76024095da0049191bfb15764f68"
+    }
+  ],
+  "original_archive_access_paths_preserved": true,
+  "extracted_features_unchanged": true,
+  "current_checkpoints_and_model_cache_unchanged": true,
+  "wsl_shutdown_or_compaction_performed": false,
+  "linux_free_gib_after": 266.4532775878906,
+  "windows_c_free_gib_after": 55.68369674682617,
+  "archive_b_free_gib_after": 629.2623481750488,
+  "study_resume": "blocked: Windows C remains below required56GiB; archive relocation frees native blocks without shrinking host VHDX"
+}

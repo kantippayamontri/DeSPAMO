@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "status": "new_133_dump_analyzed_audio_isr_bucket_root_cause_unresolved_gpu_held",
+  "report": "docs/windbg-dpc-crash-analysis-2026-10-11.md",
+  "authorization": "User requested local dump copy and analysis; normal Windows UAC elevation used for one protected-file copy only.",
+  "dump": {
+    "source": "C:\\Windows\\Minidump\\101126-10500-01.dmp",
+    "copy": "B:\\DeSpaMo\\diagnostics\\gpu-crashes-2026-10-11\\101126-10500-01.dmp",
+    "bytes": 5865292,
+    "sha256": "ac6a3fa6490cae662200d9af098a44cf31aba5d3a815d0d735a726ed8fd0ad8f",
+    "export_utc": "2026-10-11T13:36:30.2323616Z",
+    "source_copy_sha256_verified": true,
+    "header_bugcheck": "0x133",
+    "header_parameters": ["0x1", "0x1e00", "0xfffff8008e3c53c8", "0x0"],
+    "debug_session_crash_utc": "2026-10-11T08:25:26.111Z"
+  },
+  "debugger": {
+    "package_version": "1.2610.1001.0",
+    "engine_version": "10.0.29661.1004",
+    "nt_image_version": "10.0.26100.9457",
+    "nt_pdb_loaded": true,
+    "wrong_symbols_bucket": false,
+    "primary_exit_code": 0,
+    "details_exit_code": 0,
+    "primary_log": "B:\\DeSpaMo\\diagnostics\\gpu-crashes-2026-10-11\\analysis-symbols-10500.txt",
+    "primary_log_sha256": "956c25431bd229854556eb1762149e0d8740f5c18becd5625decdf5f38e0bf38",
+    "details_log": "B:\\DeSpaMo\\diagnostics\\gpu-crashes-2026-10-11\\analysis-details-10500.txt",
+    "details_log_sha256": "45fde2d0a9a24eea0ed75f058cac4111903f60d5142bbd897ce0c5c63e28911e"
+  },
+  "analysis": {
+    "bugcheck_name": "DPC_WATCHDOG_VIOLATION",
+    "parameter1": 1,
+    "timeout_type": "DPC_QUEUE_EXECUTION_TIMEOUT_EXCEEDED",
+    "process_name": "System",
+    "symbol_name": "HDAudBus!HdaController::Isr+19a",
+    "module_name": "HDAudBus",
+    "image_name": "HDAudBus.sys",
+    "image_version": "10.0.26100.9444",
+    "failure_bucket_id": "0x133_ISR_HDAudBus!HdaController::Isr",
+    "primary_stack_has_nvlddmkm_frame": false,
+    "interrupted_network_stack_present": true,
+    "queued_audio_dpc": "HDAudBus!HdaController::CodecDpc",
+    "watchdog_triage_type_available": false,
+    "audio_isr_proven_initiating_cause": false,
+    "realtek_proven_cause": false,
+    "s2_proven_cause": false,
+    "vram_oom_proven": false,
+    "interpretation": "Cumulative high-IRQL watchdog stop sampled an audio ISR interrupting network receive work. Parameter1=1 can stop outside the offending code. Dump does not establish why preceding GPU illegal-instruction fault occurred or prove audio/NIC hardware or driver defect."
+  },
+  "read_only_inventory": {
+    "nvidia_pci_audio_controller_vendor_device": "10DE:22BA",
+    "nvidia_pci_audio_controller_driver": "Microsoft hdaudbus.inf 10.0.26100.9444",
+    "nvidia_audio_endpoint_driver": "1.4.6.3",
+    "realtek_network_driver": "10.79.50.1003",
+    "usb_audio_device_present": true,
+    "dump_isr_object_bound_to_specific_device": false
+  },
+  "containment": {
+    "gpu_compute_launched": false,
+    "gpu_diagnostics_or_matched_generation_launched": false,
+    "training_or_watchdog_restarted": false,
+    "devices_disabled": false,
+    "driver_registry_acl_or_runtime_changed": false,
+    "dump_uploaded": false,
+    "gpu_hold_active": true,
+    "gpu_validation_approved": false
+  },
+  "next": "Review user audio route and a specific reversible host-isolation mitigation before deciding whether to authorize bounded matched GPU generation. No automatic GPU comparison or training restart."
+}

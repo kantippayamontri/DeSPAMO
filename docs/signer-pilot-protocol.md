@@ -214,3 +214,200 @@ frozen DINO leaving less room for the nuisance GRL to act at all. Gate reports:
 `gate-validate-known-collapse-v1.json`. These probe partitions hold roughly 90 to 700
 clips from a single seed, so treat the magnitudes as indicative and the directions as
 reliable; reduced probe accuracy is not by itself evidence of better translation.
+
+## Matched-frame probe repair (2026-10-03)
+
+The v1 subset gate pooled all original frames but only five adapted frames for
+geometry and signer probes. The tables above remain historical v1 results;
+their signer deltas and spread ratios include that sampling confound. Detecting
+the known collapsed encoder did not validate the gate as a predictor of BLEU.
+
+`scripts/probe_e3_features.py` now publishes schema 2 under
+`probe_policy=e3-probe-matched-five-v2`. Both encoders use the same five source
+frame indices. Clip-mean geometry/signer probes and middle-frame hand probes
+therefore compare aligned inputs. Regression controls require unit spread ratio
+and zero signer delta when the encoder is compared against itself.
+
+`gate_status` is `PASS`, `FAIL`, or `INCOMPLETE`. A completed scoring operation
+still has `status=complete`; an unavailable hand probe has an explicit reason,
+`gate_status=INCOMPLETE`, and `gate_pass=null`. Both hands must be available
+before a pass/fail verdict. Seven-class hand probes require at least seven clips
+per class so every fit/validation/test partition is populated.
+
+Historical heuristic thresholds are unchanged and recorded in each report:
+`std_ratio > 0.60`, signer top-1 delta `<= 0.005`, and both hand top-1 deltas
+`>= -0.02`. Translation checkpoint selection continues to use dev BLEU.
+
+Corrected reports use verified full feature caches, then select five rows per
+clip; no adaptation, extraction, or held-out translation evaluation was rerun.
+Both reports cover the same deterministic 543 logical-train clips:
+
+| Full adaptation recipe | `std_ratio` | Signer top-1 delta | Hand L delta | Hand R delta | `gate_status` |
+|---|---:|---:|---:|---:|---|
+| Constant LR, relational 0.1 | 0.830648 | -0.123596 | -0.044776 | -0.014493 | FAIL |
+| Cosine/lower LR, relational 0.1 | 0.941416 | -0.022472 | -0.029851 | +0.014493 | FAIL |
+
+Reports under `/home/kan/datasets/despamo/signer-pilot/`:
+
+- `gate-full-w0.1-matched-five-v2.json`
+- `gate-e3-differ-cosine-full-matched-five-v2.json`
+
+Each report binds the adaptation checkpoint, cached encoder/manifest/frame-row
+hashes, sampled clip/frame-index hashes, source/text digests, code hashes,
+thresholds, and appearance-supervision policy. Cache loading checks per-clip
+feature/receipt hashes and source-frame alignment before scoring. Original v1
+reports and frozen captions remain historical artifacts.
+
+To use the CPU cache path, pass all existing probe arguments plus
+`--adapted-root /path/to/e3-features-<key>`, and choose a new output filename.
+`--mode preflight` validates cache metadata without producing a report;
+`--mode run` verifies selected feature files and scores the probes. Without
+`--adapted-root`, the script still extracts the adapted five-frame subset on CUDA.
+
+## Residual projector / longer downstream control launch (2026-10-03)
+
+The user approved launching the downstream ablation while deferring Windows disk
+compaction. The experiment reuses cosine feature cache `7122b42e...` and the
+completed linear-8000 baseline (dev BLEU-4 4.709851); it does not consume the other
+server's new descriptions. Full design:
+[residual-projector experiment](superpowers/specs/2026-10-03-residual-projector-experiment.md).
+
+Two new versioned arms run sequentially through `scripts/run_projector_experiments.sh`:
+
+- Residual-MLP projector: 8000 steps, hidden width 1024 for spatial/motion branches,
+  zero-initialized final residual layers, 2000 VT warmup, 800 LR warmup, cap 10800 s.
+- Original linear projector control: 16000 steps, 2000 VT warmup, 1600 LR warmup,
+  cap 14400 s. This declares a new scheduler horizon and fresh initialization.
+
+Both preserve batch 4, seed 0, adapted features, temporal fusion, optimizer groups,
+deterministic decoder, logical split and appearance-supervision labels. Each new
+run retains only its latest two atomically saved and fsynced resume checkpoints;
+all dev-selection checkpoints are preserved. Historical run artifacts are outside
+this retention policy. Budgets and status writes remain under the owned run lock.
+
+Run keys:
+
+- `projector-residual-8000-def98a1f1fd934780ba7e18fe39e221c4d0a839e669cfa072d43931729dce325`
+- `projector-linear-16000-eb0a5bef8210afc3d894f4ac57338f8cd5e0f01b6b4d74a8a38cb285b4f5f313`
+
+Live session: tmux `projector-experiment-v1`. Log:
+`/home/kan/datasets/despamo/signer-pilot/projector-experiment-v1-launch.log`.
+Residual real-data joint CE+VT smoke passed with nonzero gradients in both
+projectors and FLAN LoRA, no optimizer update, and restored initialization/RNG/
+buffers. The first run was observed past warmup at step 2356 with two retained
+resumes; the linear control is queued. Evaluation in this launch uses dev only.
+
+Implementation verification: 663 tests passed, 4 skipped; full Ruff and targeted
+Pyright clean. Independent review's checkpoint-durability, refused-resume status
+and source-hash closure findings were reproduced and fixed before launch.
+
+## Equal-budget residual 16000 extension (2026-10-03)
+
+The completed original linear 16000 control selected step 16000 with dev
+BLEU-4 **5.489715** (5500: 4.148136; 10400: 5.410774; 16000: 5.489715).
+The user approved a fresh residual-MLP 16000 arm for an equal-budget architecture
+comparison. It uses the same cached features, batch 4, seed 0, VT warmup 2000,
+LR warmup 1600, 16000-step cosine horizon, optimizer groups, decoder and dev
+schedule 5500/10400/16000. Both spatial/motion residual branches match the 8000
+architecture; this is not a spatial-only ablation.
+
+The runner verifies and binds the completed linear control's full-dev selection,
+config/input hashes and selected checkpoint. All 56 shared local source hashes
+match; the approved entrypoint extension is versioned separately. Before editing,
+all 57 original source files were archived and verified against both original
+arm identities. See [matched residual 16000 plan and execution record](superpowers/plans/2026-10-03-matched-residual-projector-16000.md).
+
+Fresh run:
+`projector-residual-16000-f8deb3d4b807d59f3e0df2e6e6253ec069fb01d1a3365c36d4c257422d87526d`.
+Tmux `projector-residual-16000`; log
+`/home/kan/datasets/despamo/signer-pilot/projector-residual-16000-launch.log`.
+Real joint gradient smoke passed, initialization matched the residual 8000 arm,
+and live training was verified. Cap remains 14400 s with latest-two resume
+retention. Current comparison uses dev only; Signer07 remains unscored for these arms.
+
+## Held-out and paired-seed robustness completion (2026-10-04)
+
+The user authorized once-only Signer07 scoring for both selected 16000-step
+models, error analysis, a conditional future-description baseline and a matched
+seed1 replication, up to ten additional GPU-stage hours. The full workflow
+completed in **3.8711 hours**, with four complete 768-item registry claims.
+
+| Seed | Linear dev BLEU-4 | Residual dev BLEU-4 | Linear Signer07 BLEU-4 | Residual Signer07 BLEU-4 | Paired held-out delta |
+|---|---:|---:|---:|---:|---:|
+| 0 | 5.489715 | 6.557227 | 4.784803 | 5.915115 | +1.130312 |
+| 1 | 5.715049 | 4.583490 | 4.991212 | 3.849948 | -1.141264 |
+
+All four models selected step16000 on dev before test scoring. Two-seed mean
+held-out BLEU-4 is **4.888008 linear versus4.882532 residual**; residual sample
+standard deviation1.460294 versus0.145953 linear. The primary MLP gain transferred,
+but its sign reversed in the second seed. This is a seed-sensitive result, not a
+robust architecture or signer-invariance claim.
+
+Repeated-4gram outputs: seed0 271 linear /213 residual; seed1 253 linear /274
+residual. Lexical date/location/temperature diagnostics, supported-denominator
+counts, representative errors and conditional cluster-bootstrap intervals are in
+[the full report](projector-heldout-robustness-2026-10-04.md). These are automated
+lexical comparisons, not human/visual correctness ratings or complete semantic
+error rates. Actual new descriptions are not inputs to these experiments.
+
+Study artifacts: `/home/kan/datasets/despamo/signer-pilot/projector-overnight-study-v1/`.
+Registry: `/home/kan/datasets/despamo/signer-pilot/projector-heldout-registry-v1.json`.
+The predeclared primary-transfer rule saved residual16000/seed0 as a
+**provisional mixed-robustness** future-description recipe, with linear16000
+retained as comparator: `configs/experiment/projector_residual16_provisional.yaml`.
+
+## Three-arm downstream connector study completed (2026-10-05)
+
+User authorized reference/plain spatial MLP/small Q-Former across two seeds,
+six fresh16000-step runs, up to18GPU-stage hours. Motion remained linear in all
+arms. Plain MLP replaced only spatial2048→768 with2048→1024→768/GELU. Q-Former
+retained linear inputs and TCN, replacing the final output MLP with32 learned
+queries,2layers,width768,12heads,FF3072,dropout0.1 and temporal positions.
+It was from scratch, operating on frame-summary features rather than patches.
+VT-Align remained2000-step warmup followed by CE+VT.
+
+| Arm | Seed0 dev BLEU-4 | Seed1 dev BLEU-4 | Mean |
+|---|---:|---:|---:|
+| Fresh reference | 4.541238 | 4.571809 | 4.556524 |
+| Plain spatial MLP | 5.197683 | 7.090514 | 6.144099 |
+| Small Q-Former connector | 5.695729 | 5.901238 | 5.798483 |
+
+All runs reached16000; seed1 Q-Former selected10400 on dev, other arms selected
+16000. Both candidates beat fresh reference in both seeds, but plain MLP had
+greater observed spread. Reference rerun differences versus historical linear
+scores remain unexplained after recipe/initialization audit. These results are
+dev-only; no Signer07 inference or strong architecture/significance claim.
+
+Storage crash occurred during seed1 MLP's final resume write.113.51GiB redundant
+completed-run snapshots/failed temporary write were removed under explicit user
+authorization; intact terminal/dev results finalized without training. After user
+compacted host disk, all completed work was revalidated and the last Q-Former arm
+finished. Controller charged12.1521hours conservatively, within18, without reset.
+Full [three-arm results](three-arm-connector-results-2026-10-05.md), including
+metrics, repetition, parameters, trajectories, storage/reproducibility caveats.
+
+## Three-arm connector held-out follow-up (2026-10-05)
+
+After explicit user request, all six fixed dev-selected models were scored once
+logically on exact ordered768Signer07 clips. Same beam5/max64/noICL/BF16/batch4;
+no retraining, test-based selection or architecture/data changes. QFormer seed1
+remained at its dev-selected10400 checkpoint; every training horizon was16000.
+
+| Arm | Seed0 Signer07 BLEU-4 | Seed1 Signer07 BLEU-4 | Mean | Mean gain vs fresh reference |
+|---|---:|---:|---:|---:|
+| Fresh reference | 4.360015 | 4.513259 | 4.436637 | 0 |
+| Plain spatial MLP | 4.637257 | 5.698437 | 5.167847 | +0.731210 |
+| Small Q-Former connector | 5.150172 | 4.655053 | 4.902613 | +0.465976 |
+
+Both alternatives improved held-out point estimates in both seeds. PlainMLP
+had the higher mean and greater observed spread; QFormer won seed0 but notseed1.
+Conditional69-broadcast bootstrap intervals includedzero for PlainMLP seed0
+andQFormer seed1. Two seeds/one held-out signer and unresolved reference-rerun
+variability limit broad significance/architecture/invariance claims.
+
+Reports: `/home/kan/datasets/despamo/signer-pilot/three-arm-connector-heldout-v1/controller/`.
+Shared registry now10complete claims:6new/4preserved, each768journaled items.
+The unmodified original evaluator's registry engine was reused privately with
+connector-specific reconstruction/source bindings. Runtime charge1.1045GPU-stage
+hours. Full [held-out comparison](three-arm-connector-heldout-2026-10-05.md).
+No old results, caption records, selected weights or test decoder were overwritten.

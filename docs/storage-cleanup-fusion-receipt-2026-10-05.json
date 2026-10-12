@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "completed_at": "2026-10-05T04:18:25.678107+00:00",
+  "deletion_status": "complete",
+  "manifest_path": "docs/storage-cleanup-fusion-manifest-2026-10-05.json",
+  "audit_sha256": "e6977cc0a80147cb75310f4d7d912cad339b95e20ae7ee442f6a3187816ae364",
+  "candidate_inventory_sha256": "6eeadc099fbac45316e158750680d91b66e65348d886a04417e4dffa9f306981",
+  "metadata_inventory_sha256": "8b3c99e8f70802b1446c6d5197c666226570b3fdc49dbe11db1846b6a163c395",
+  "deleted_count": 35,
+  "allocated_bytes_removed": 208754876416,
+  "retained_files_unchanged": 23,
+  "metadata_files_unchanged": 151,
+  "verification": "All 35 exact approved paths absent; retained file inode/size/mtime fingerprints unchanged; 151 metadata/report/journal hashes unchanged; retained checkpoint content and recovery payloads checked before deletion.",
+  "before_free_bytes": {
+    "linux": 258397130752,
+    "windows_c": 89788813312
+  },
+  "after_deletion_free_bytes": {
+    "linux": 467151634432,
+    "windows_c": 89788813312
+  },
+  "gpu": "0 %, 2 MiB",
+  "wsl_reclamation_status": "online_trim_complete_offline_compaction_required",
+  "trim_command": "wsl.exe --distribution Ubuntu-26.04 --user root --exec /usr/sbin/fstrim -v /",
+  "trimmed_bytes": 328977240064,
+  "after_trim_free_bytes": {
+    "linux": 467151425536,
+    "windows_c": 89791750144
+  },
+  "verified_vhdx_path": "C:\\Users\\kanti\\AppData\\Local\\wsl\\{a83d506b-8a90-4175-a372-d34e90737c84}\\ext4.vhdx",
+  "compaction_blocker": "Disk must be detached or read-only. WSL shutdown terminates this agent's environment; perform remaining compaction from an external elevated Windows terminal.",
+  "compaction_instructions": "docs/wsl-compaction-fusion-2026-10-05.md",
+  "training_started": false
+}

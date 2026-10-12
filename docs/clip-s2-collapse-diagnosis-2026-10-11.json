@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "status": "diagnosed_guarded_relaunched_v2",
+  "first_attempt_root": "/home/kan/datasets/despamo/official-phoenix14t-translation-clip-s2-spamo200-v1",
+  "first_attempt_preserved": true,
+  "first_attempt_manual_stop": true,
+  "symptom": {
+    "dev_bleu4": {"2": 0.0697, "4": 0.0, "6": 0.0, "8": 0.0, "10": 0.0},
+    "identical_dev_output_from_epoch": 6,
+    "logged_translation_ce_after_vt_warmup": "~9.5-9.9 for5500+ updates (near uniform ln32128=10.38)",
+    "dino_same_steps_ce": "3.9 -> 2.7"
+  },
+  "evidence_against_feature_or_recipe_cause": {
+    "fresh_process_ce_archived_epoch2": 4.13,
+    "fresh_process_ce_archived_epoch4": 4.14,
+    "fresh_process_ce_archived_epoch6": 3.42,
+    "fresh_process_ce_resume_epoch10_eval": 2.81,
+    "fresh_process_resume_epoch10_continued_training_ce": "3.3 -> 2.8 over60 updates",
+    "fresh_process_full_dev_archived_epoch2_bleu4": 0.0668,
+    "fresh_process_full_dev_archived_epoch2_sss_outputs": 0,
+    "live_epoch2_sss_outputs": 303,
+    "live_epoch2_sss_contiguous_from_dev_index": 216,
+    "same_sequence_1774_updates_plus_dev_in_one_process_sss_outputs": 0,
+    "frozen_base_fingerprint_drift_in_replays": false,
+    "saved_weights_and_frozen_fingerprints_match_identity": true
+  },
+  "conclusion": "Saved weights and features are healthy: in fresh processes the same checkpoints give normal CE/outputs and training progresses. The live process became corrupt mid-way through epoch2 dev generation (abruptly at dev clip216) and stayed corrupt, so logged CE and every later dev report reflected the corrupted in-memory state. Deterministic replay did not reproduce it. Root cause of the in-memory corruption (e.g. transient GPU/driver fault under WSL) is not identified; no kernel/driver error was logged.",
+  "fix": {
+    "files": ["tools/clip_s2/guards.py", "tools/clip_s2/train.py", "tools/clip_s2/study.py"],
+    "guards": [
+      "frozen-base fingerprint re-check every epoch before resume publication",
+      "translation-CE collapse check: mean of last200 CE >= 8.0 after VT warmup",
+      "dev report rejected if every clip has the same prediction after joint training starts"
+    ],
+    "on_guard": "RecoverableFault: worker exits without publishing; watchdog restarts from last durable resume (bounded3)",
+    "recipe_changed": false,
+    "tests": "49 main-env + 14 extraction-env tests passed; Ruff/Pyright clean"
+  },
+  "relaunch": {
+    "study_root": "/home/kan/datasets/despamo/official-phoenix14t-translation-clip-s2-spamo200-v2",
+    "archive_root": "/mnt/b/DeSpaMo/archives/official-phoenix14t-translation-clip-s2-spamo200-v2",
+    "feature_package_reused_verified": true,
+    "full_data_profile_passed": true,
+    "controller_pid": 258544,
+    "watchdog_pid": 258568,
+    "seed0_started_utc": "2026-10-11T03:41Z",
+    "seed1_queued": true,
+    "test_scoring": false
+  }
+}

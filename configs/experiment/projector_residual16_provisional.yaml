@@ -1,0 +1,57 @@
+# Recipe metadata for the future description-version comparison, not an executable launch config.
+artifact_type: downstream_baseline_recipe
+status: provisional_mixed_robustness
+ready_for_new_description_training: false
+reference_report: docs/projector-heldout-robustness-2026-10-04.md
+runtime_decision: /home/kan/datasets/despamo/signer-pilot/projector-overnight-study-v1/future-description-baseline.json
+
+projector:
+  kind: residual
+  spatial_and_motion_branches: true
+  hidden_dim: 1024
+  residual_seed: 1
+  final_residual_layer_initialization: zero
+
+training:
+  initialization: fresh
+  seed: 0
+  steps: 16000
+  physical_batch: 4
+  accumulate_grad_batches: 1
+  vt_warmup_steps: 2000
+  vt_weight: 1.0
+  vt_pooling: masked_mean
+  lr_warmup_steps: 1600
+  lr_schedule: cosine_to_zero
+  adapter_lr: 0.0003
+  flan_lora_lr: 0.00005
+  optimizer: AdamW
+  betas: [0.9, 0.98]
+  eps: 0.00000001
+  weight_decay: 0.01
+  gradient_clip: 1.0
+  precision: bf16
+  dev_checkpoints: [5500, 10400, 16000]
+  resume_retention: 2
+
+decoder:
+  mode: deterministic
+  beam_size: 5
+  max_length: 64
+  in_context: false
+
+supervision:
+  policy: qwen-schema98-unreviewed-v1
+  human_review_status: not_assessed
+  future_dataset_status: awaiting_external_versioned_artifacts
+  require_complete_source_schema_text_encoder_provenance: true
+  preserve_all_translation_clips: true
+  mask_failed_or_unknown_appearance_targets: true
+
+comparison:
+  retain_linear_16000_comparator: true
+  primary_seed0_heldout_bleu4_delta: 1.1303121185505036
+  replication_seed1_heldout_bleu4_delta: -1.141264343957113
+  mean_paired_bleu4_delta: -0.005476112703304725
+  robust_improvement_established: false
+  signer_invariance_established: false

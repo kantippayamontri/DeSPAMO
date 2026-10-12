@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "status": "continuous_seed0_long_run_launched_and_live",
+  "training_finished": false,
+  "report": "docs/clip-s2-long-run-launch-2026-10-12.md",
+  "hyperparameter_parity": "docs/clip-s2-dino200-hyperparameter-parity-2026-10-12.json",
+  "binding_hash": "8298146c075786430d31bd06e8f61bd18b612f2e5b373d6e254d88ed728aeb2f",
+  "token": "production-seed0-step5322-to-max200-continuous-v1",
+  "attempt_started_utc": "2026-10-12T09:02:17.003823Z",
+  "observed_utc": "2026-10-12T09:06:31.675738Z",
+  "owners": {
+    "parent_pid": 193877,
+    "parent_start_ticks": "5104318",
+    "train_pid": 193953,
+    "train_start_ticks": "5106435",
+    "wsl_boot_id": "a25da066-fad8-4652-92f2-4d30dd670f2c",
+    "live_identity_verified": true
+  },
+  "observed_progress": {"phase": "train", "start_step": 5322, "completed_updates": 5625, "durable_updates": 5322, "current_target_step": 7096},
+  "scope": {
+    "seed": 0,
+    "max_epoch": 200,
+    "min_epoch": 40,
+    "dev_every_epochs": 2,
+    "patience_dev_checks": 10,
+    "min_delta_bleu4": 0.1,
+    "remaining_train_update_cap": 172078,
+    "remaining_dev_check_cap": 97,
+    "remaining_dev_clip_cap": 50343,
+    "stages": ["supervisor", "train", "dev"],
+    "automatic_sequential_train_dev": true,
+    "training_duration_limit_seconds": null,
+    "scope_credential_expiry_days": 90,
+    "consumed_at_observation": false
+  },
+  "parity": {
+    "entire_DINO200_training_recipe_equal": true,
+    "shared_source_files_hash_equal": 75,
+    "frozen_current_source_files_verified": 93,
+    "base_model_runtime_initialization_equal": true,
+    "training_hyperparameters_modified": false,
+    "safe_dev_execution": "Fresh optimizer-free batch1/cacheTrue/beam5/max64"
+  },
+  "retention": {
+    "explicit_user_answer": "Approve latest2 retention",
+    "allow_owned_resume_pruning": true,
+    "child_ticket_permission_verified": true,
+    "keep_latest_safe_runtime_full_resumes": 2,
+    "requires_healthy_publication_and_verified_candidate_archive": true,
+    "all_dev_candidates_and_selections_retained": true,
+    "original_epoch1_and_epoch2_retained": true,
+    "targeted_retention_scope_accounting_tests_passed": 16,
+    "new_tests_ruff_and_format": "passed"
+  },
+  "prior_costs_retained_seconds": 6430.341189303363,
+  "current_best": {"epoch": 6, "step": 5322, "bleu4": 2.0776100886063897},
+  "containment": {"restart_from_zero": false, "extra_seed_authorized": false, "official_test_authorized": false, "automatic_retry_authorized": false, "old_controller_released": false, "runtime_source_modified": false, "root_cause_proven": false, "long_stability_proven": false},
+  "monitoring": {
+    "native_runtime_root": "/home/kan/datasets/despamo/official-phoenix14t-translation-clip-s2-spamo200-v3/runs/translation-reference-seed0-fe5c22c66305d9e3bea3074792c0f64955b2c01c4b61bf92656448c0f7ae5671/safe-runtime-v1",
+    "supervisor_log": ".superpowers/sdd/2026-10-12-clip-s2-safe-resume/long-run-supervisor.log",
+    "approval": ".superpowers/sdd/2026-10-12-clip-s2-safe-resume/production-long-run-approval.json"
+  }
+}

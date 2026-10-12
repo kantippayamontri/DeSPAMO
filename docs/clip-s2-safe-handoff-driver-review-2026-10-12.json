@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "reviewed": true,
+  "purpose": "user-authorized1-update/1-cached-clip native S² handoff probe only",
+  "observed_utc": "2026-10-12T02:43:48.5537745Z",
+  "windows_driver_version": "32.0.16.1742",
+  "nvidia_version": "617.42",
+  "windows_boot_utc_current_cim": "2026-10-11T08:25:42.6825970Z",
+  "previous_reported_boot_utc_historical": "2026-10-11T08:25:48.5000000Z",
+  "wsl_boot_id": "a25da066-fad8-4652-92f2-4d30dd670f2c",
+  "new_matching_fault_events_since_preflight": 0,
+  "nvidia_audio_problem_code": 0,
+  "windows_C_free_bytes_storage_check": 55377661952,
+  "projected_native_probe_bytes": 677768779,
+  "reserve_bytes": 53687091200,
+  "capacity_guard_passed": true,
+  "long_training_approved": false,
+  "checkpoint_adoption_approved": false,
+  "windows_devices_modified": false,
+  "underlying_crash_root_cause_proven": false
+}

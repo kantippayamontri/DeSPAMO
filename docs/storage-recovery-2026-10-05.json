@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "status": "cleanup_and_terminal_recovery_complete_resume_blocked_by_host_space",
+  "authorization": "User requested analysis and deletion of files that do not affect retained experiments before continuation.",
+  "cleanup_completed_at": "2026-10-05T03:15:25.419949+08:00",
+  "root": "/home/kan/datasets/despamo/signer-pilot",
+  "deleted_files": 21,
+  "deleted_completed_run_resume_checkpoints": 20,
+  "deleted_failed_pending_checkpoints": 1,
+  "unlinked_allocated_bytes": 121878552576,
+  "recovered_linux_GiB": 113.50824737548828,
+  "retained_checkpoint_fingerprints_verified": 36,
+  "preservation": "All step-*.ckpt files, selected models, dev/test/probe reports, budgets, source archives, datasets, captions, raw frames, feature/model caches and incomplete-run resume checkpoints preserved.",
+  "space_before_cleanup_bytes": {"linux": 167040770048, "windows_c": 3471945728},
+  "space_after_cleanup_bytes": {"linux": 288919322624, "windows_c": 3471880192},
+  "online_trim": {
+    "command": "wsl.exe --distribution Ubuntu-26.04 --user root --exec /usr/sbin/fstrim -v /",
+    "reported_discarded_bytes": 241991659520,
+    "meaningful_windows_space_reclaimed": false,
+    "note": "Discarded virtual filesystem blocks did not materially shrink/reclaim the host VHDX. Windows C remains about 3.3 GiB available."
+  },
+  "interrupted_run": {
+    "run_key": "connector-plain_mlp-seed1-16000-45ff441985aa7cd1f5007b316fe7646c560ad41cfa4d4c756d3629c1dfa31cad",
+    "retained_terminal_checkpoint": "step-16000.ckpt",
+    "terminal_sha256": "b7e0836dfbaf821939d21493f65181e21fa7789b4b4e2697e9de5f4cabdb6eb7",
+    "dev_bleu4": 7.090514409939727,
+    "recovery_status": "complete_and_validated",
+    "optimizer_updates_during_recovery": 0,
+    "generation_batches_during_recovery": 0,
+    "method": "Verified full checkpoint state and all three existing dev reports, finalized selection under owned run lock and reconciled controller completion conservatively."
+  },
+  "controller_recovery": {
+    "seed0_spent_seconds": 19152.02503064013,
+    "seed1_spent_seconds": 17734.91450478203,
+    "seed1_remaining_seconds": 14665.085495217969,
+    "original_total_budget_seconds": 64800,
+    "budget_reset": false,
+    "completed_runs": 5,
+    "remaining_run": "qformer seed1, fresh 16000-step run",
+    "status": "paused_storage"
+  },
+  "resume": {
+    "script": "scripts/resume_connector_study.sh",
+    "minimum_linux_free_GiB": 50,
+    "minimum_windows_c_free_GiB": 50,
+    "blocking_action": "Reclaim Windows-host space, for example offline WSL VHDX compaction, before GPU continuation."
+  },
+  "deleted_inventory": [
+    {"run": "connector-plain_mlp-seed0-16000-61f0c94264aae21fd25435bd7c954701e78c8f24c808b8f22032fa62929fe768", "files": ["resume-16000.ckpt", "resume-15500.ckpt"], "allocated_bytes": 11882528768},
+    {"run": "connector-qformer-seed0-16000-8cec060038e93a6b99242cfcc838abb306e89ffc702f5686158195378bb1ec2c", "files": ["resume-16000.ckpt", "resume-15500.ckpt"], "allocated_bytes": 12204789760},
+    {"run": "connector-reference-seed0-16000-c9af7cf6b8aff72ecf8f8e88cd04ddfa6c56811b55072def47d5fbaeacfcf825", "files": ["resume-16000.ckpt", "resume-15500.ckpt"], "allocated_bytes": 11851046912},
+    {"run": "connector-reference-seed1-16000-74d3aee182b240283f3a0b1643369378f60adcc3b2c6e9a8bef4d4b6ebc71cd7", "files": ["resume-16000.ckpt", "resume-15500.ckpt"], "allocated_bytes": 11851030528},
+    {"run": "e3-only-0402717f5ef91cca106caa881b689ce1eba75a3a87976302c99c654bea189690", "files": ["resume-8000.ckpt"], "allocated_bytes": 5925511168},
+    {"run": "e3-only-927e19028e8e790e01452fc1097d4786075e485964c49ef0ed1d9c221525ed26", "files": ["resume-8000.ckpt"], "allocated_bytes": 5925511168},
+    {"run": "projector-linear-16000-0319401a7579e5fc6ee3a37748c01a441b2e0b75cf97ce9778f6fc60e1f457da", "files": ["resume-16000.ckpt", "resume-15500.ckpt"], "allocated_bytes": 11851026432},
+    {"run": "projector-linear-16000-eb0a5bef8210afc3d894f4ac57338f8cd5e0f01b6b4d74a8a38cb285b4f5f313", "files": ["resume-16000.ckpt", "resume-15500.ckpt"], "allocated_bytes": 11851030528},
+    {"run": "projector-residual-16000-86f337958a8244e9538b3f36d7f6186859982f20fa1edd4ac71f614b8a54f353", "files": ["resume-16000.ckpt", "resume-15500.ckpt"], "allocated_bytes": 11964547072},
+    {"run": "projector-residual-16000-f8deb3d4b807d59f3e0df2e6e6253ec069fb01d1a3365c36d4c257422d87526d", "files": ["resume-16000.ckpt", "resume-15500.ckpt"], "allocated_bytes": 11964555264},
+    {"run": "projector-residual-8000-def98a1f1fd934780ba7e18fe39e221c4d0a839e669cfa072d43931729dce325", "files": ["resume-8000.ckpt", "resume-7500.ckpt"], "allocated_bytes": 11964555264},
+    {"run": "connector-plain_mlp-seed1-16000-45ff441985aa7cd1f5007b316fe7646c560ad41cfa4d4c756d3629c1dfa31cad", "files": [".resume-16000.ckpt.1063483.pending"], "allocated_bytes": 2642419712}
+  ]
+}

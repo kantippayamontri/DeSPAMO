@@ -29,13 +29,18 @@
 - Existing `tools/followup/` and `tools/benchmark/` are historical same-recipe
   source references with original-host paths. New portable `tools/global_local/`
   entrypoints must not launch those legacy controllers on another server.
+- Published projector/fusion, official adaptation, CLIP+S² and safe-dev runners
+  also retain original-host paths and checkpoint/source admission contracts.
+  `tools/clip_s2_safe/` supports the existing reference Seed0 continuation only;
+  six-run CLIP+S² fusion orchestration and direct-B: checkpoint migration remain
+  unimplemented. Read their runbooks before using experimental entrypoints.
 - Use existing uv locks and separate motion/DINO environments if those tools are
   needed. SigLIP extraction needs its own supported, locked newer Transformers
   environment; main4.32translation runtime stays unchanged. CPU verification:
   `PYTHONPATH=src:. CUDA_VISIBLE_DEVICES=""
   HF_HUB_OFFLINE=1 OMP_NUM_THREADS=2 uv run --locked pytest tests/unit -q`.
-- Local original-host six-run training continues separately. Do not edit its
-  retained worktree/main source, model/feature bytes, locks or environment.
+- Local original-host CLIP+S² reference Seed0 long run continues separately.
+  Do not edit its retained worktree/main source, model/feature bytes, locks or environment.
 - Preserve all unrelated work and checkpoint provenance. No artifact deletion,
   secret/model/dataset publication, merge or extra training without appropriate
   user scope. Commit/push only intended branch files when explicitly requested.

@@ -175,3 +175,23 @@ Each stage needs accepted profile, data/source identity, storage reserve and
 owned checkpoint/recovery behavior. Original-server schedule remains untouched;
 separate-server development can proceed independently. New-method BLEU and
 robustness results do not exist at this publication stage.
+
+## Published experiment-code snapshot — 2026-10-12
+
+This branch also carries original-host experiment implementations and tests:
+projector/connector/fusion studies, motion extraction, merged appearance targets,
+official DINO adaptation, frozen CLIP+S² extraction/reference training, cached-dev
+helpers, plain-CLIP safe processes and checkpoint-compatible CLIP+S² safe resume.
+Their runbooks and historical verification receipts are included for provenance.
+
+`tools/clip_s2_safe/` is the admitted reference Seed0 runtime, with sequential
+training/evaluation processes and explicit source/checkpoint/budget/GPU scope
+validation. It is not the planned six-run CLIP+S² fusion controller or the proposed
+direct-B: checkpoint-storage migration. Both remain unimplemented.
+
+Experimental configurations retain original-host absolute paths, Windows storage
+queries and separate interpreter requirements. Portable global/local entrypoints
+still need their own provider/path/runtime integration; these historical launchers
+must not be invoked blindly on another server. Model/data/checkpoint payloads,
+environments, credentials and ignored operational approval files are not part of
+this source publication. The original-host live run remains independent.

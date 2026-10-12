@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "status": "isolated_cpu_tested_mitigation_prepared_gpu_held",
+  "authorization": "User approved minimal cached-generation, eval-batch1 and telemetry mitigation with CPU tests before host-reviewed staged GPU validation.",
+  "worktree": "/home/kan/Research/DeSpaMo/.superpowers/sdd/2026-10-07-official-phoenix14t-dino-adaptation/worktree",
+  "namespace": "tools/clip_s2_inference",
+  "source_sha256": {
+    "__init__.py": "1b1e46da1d8562438d2c31f0115f596e246d7d44eda4752d2ed0773081059501",
+    "generation.py": "f97296557d68f6b7d941bc23c76d350d972623688a74137d2ca18930624b61f2",
+    "evaluation.py": "8926c54a519cb3fbf134cc44fc42b4579ccadff70c6ee5d0bc4abef65ba3205c"
+  },
+  "policy": {
+    "training_use_cache_mutated": false,
+    "training_gradient_checkpointing_mutated": false,
+    "generation_use_cache": true,
+    "evaluation_batch_size": 1,
+    "beam_size": 5,
+    "max_length": 64,
+    "do_sample": false,
+    "scope": "official-dev only; bounded probes diagnostic-only/no metrics",
+    "no_cuda_rng_or_memory_cleanup_after_device_fault": true,
+    "automatic_gpu_retry": false
+  },
+  "verification": {
+    "new_cpu_tests_passed": 17,
+    "new_and_nearby_tests_passed": 34,
+    "real_tiny_t5_cached_outputs_match_uncached": true,
+    "real_tiny_peft_lora_cached_outputs_match_uncached": true,
+    "decoder_prefix_single_newest_token_verified": true,
+    "training_config_and_module_flags_unchanged": true,
+    "batch1_order_and_reference_provenance_verified": true,
+    "bounded_probes_and_incomplete_loader_cannot_be_full_selection_reports": true,
+    "logging_failure_cannot_mask_primary_error": true,
+    "ruff_format_and_targeted_pyright_passed": true,
+    "configured_main_cpu_suite": {"passed": 1625, "skipped": 4, "failed": 5},
+    "main_suite_failure_reasons": "Four existing held-out CLI CUDA prerequisites under explicit GPU disable; one unrelated scripts/run_fusion_study.py source-key fixture mismatch. Exact test names in mitigation markdown."
+  },
+  "preservation": {
+    "all_original_v3_source_hashes_match": true,
+    "main_src_and_old_training_helpers_modified": false,
+    "epoch1_checkpoint_sha256": "13c1b1b1e0fbc86cd3381b0ddd9e9523846f545f0b6aad843a7b3f6a77bbe8fe",
+    "epoch2_checkpoint_sha256": "d70cb46fbfd181f7a04c1c1ae082370031216a7799141684260a6db6813215c9",
+    "last_durable_epoch": 2,
+    "last_durable_updates": 1774,
+    "training_source_identity_and_budgets_rewritten": false
+  },
+  "gpu_hold_active": true,
+  "gpu_validation_performed": false,
+  "training_or_watchdog_launched": false,
+  "legacy_runner_wired_to_new_helpers": false,
+  "checkpoint_compatibility_bridge_implemented": false,
+  "driver_or_runtime_packages_changed": false,
+  "tdr_registry_changed": false,
+  "test_scored": false,
+  "remaining_blocker": "Both exported dumps analyzed locally in approved WinDbg; matching NVIDIA TDR reset failures confirmed. Host mitigation review still required before GPU validation or resume.",
+  "commits_pushes_or_subagents": false
+}

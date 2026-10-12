@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "status": "storage_blocked_before_gpu_launch",
+  "user_authorization": "do it: next training segment1774to3548, checkpoint/save and exit; no probe adoption or further dev scope inferred",
+  "inspection_utc": "2026-10-12T05:22:36.7337008Z",
+  "binding_hash": "8298146c075786430d31bd06e8f61bd18b612f2e5b373d6e254d88ed728aeb2f",
+  "original_identity_verified": true,
+  "production_anchor_dev_gate_verified": true,
+  "previous_owners_exited": true,
+  "production_completed_updates": 1774,
+  "executed_probe_updates": 1,
+  "charged_seconds": 2359.393579640353,
+  "requested_target_step": 3548,
+  "storage": {
+    "projected_native_bytes": 41117767610,
+    "reserve_bytes": 53687091200,
+    "required_backing_bytes": 94804858810,
+    "linux_free_bytes": 281049899008,
+    "C_free_bytes": 54327836672,
+    "B_free_bytes": 983769559040,
+    "guard_result": "ValueError: native/backing free space below projected demand plus50GiB reserve",
+    "training_projection_unchanged": true
+  },
+  "windows_boot_utc": "2026-10-11T08:25:42.6825970Z",
+  "driver_version": "32.0.16.1742",
+  "containment": {
+    "gpu_launched": false,
+    "scope_receipt_created": false,
+    "runtime_modified": false,
+    "budget_modified": false,
+    "checkpoint_adopted": false,
+    "storage_guard_bypassed": false,
+    "pruning_permission_inferred": false
+  },
+  "next": "Satisfy current training storage projection while retaining50GiB reserve; further storage-policy/runtime changes require explicit review/re-admission."
+}

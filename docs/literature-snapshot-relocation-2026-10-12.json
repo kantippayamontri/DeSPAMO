@@ -1,0 +1,31 @@
+{
+  "all_file_hashes_verified": true,
+  "associated_project": "/home/kan/Research/CGU_SLT_Literature_review",
+  "completed_wall": 1791784242.248531,
+  "file_count": 30,
+  "git_index_and_object_summary_equal": true,
+  "logical_bytes": 26506767756,
+  "manifest": "/home/kan/Research/DeSpaMo/.superpowers/sdd/2026-10-12-clip-s2-safe-resume/literature-snapshot-manifest.json",
+  "manifest_sha256": "60fd12c0b0fc75ba72d5646fedf110228f0099b99e2e97349ddde96f484b2288",
+  "native_allocated_bytes_before": 26506866688,
+  "native_backup": "/home/kan/.local/share/opencode/snapshot/06f44bf96433c21f2fc83066c3bbf946d7ce47c5/df42c8f8e84cb624a97b0b37c7fa20202d01a32e.relocation-original-v1",
+  "native_copy_removed": true,
+  "original_path_linked": true,
+  "post_trim": {
+    "inspection_utc": "2026-10-12T05:51:02.7885590Z",
+    "trim_succeeded": true,
+    "trim_reported_bytes": 931700736,
+    "C_free_bytes": 95886536704,
+    "B_free_bytes": 957262745600,
+    "training_required_backing_bytes": 94804858810,
+    "training_storage_threshold_met": true,
+    "original_path_git_read_exit": 0
+  },
+  "schema_version": 1,
+  "source": "/home/kan/.local/share/opencode/snapshot/06f44bf96433c21f2fc83066c3bbf946d7ce47c5/df42c8f8e84cb624a97b0b37c7fa20202d01a32e",
+  "source_unchanged_during_copy": true,
+  "started_wall": 1791783713.715243,
+  "status": "relocated_verified",
+  "target": "/mnt/b/DeSpaMo/storage-recovery/opencode-snapshots/06f44bf96433c21f2fc83066c3bbf946d7ce47c5/df42c8f8e84cb624a97b0b37c7fa20202d01a32e",
+  "user_authorization": "approve24.69GiB literature-review snapshot relocation toB with verified copy/original-path link"
+}

@@ -6,16 +6,17 @@
 
 **Architecture:** New `tools/clip_s2/` namespace in the retained isolated worktree owns extraction, explicit data bindings and two-run orchestration. Reuse unchanged package, FLAN model/update, recipe, sampler and compact-checkpoint helpers. New source/data/output identities preserve all current experiment bytes.
 
-**Tech Stack:** Existing main Python3.11/torch2.0.1/transformers4.32/PEFT0.7.1, NumPy/Pillow, existing uv lock, native fsync/flock publication; no dependency upgrade.
+**Tech Stack:** Translation uses existing main Python3.11/torch2.0.1/transformers4.32/PEFT0.7.1. Extraction uses existing main-project tools/motion/.venv with same torch/transformers/NumPy plus Pillow11.3; main lacks Pillow. Existing uv locks/native fsync/flock publication; no dependency upgrade or mixed imports.
 
 **Spec:** [Frozen CLIP + S² reference design](../specs/2026-10-09-frozen-clip-s2-reference-design.md).
 
 ## Global Constraints
 
 - Scope: frozen `openai/clip-vit-large-patch14` revision `32bd64288804d66eefd0ccbe215aa642df71cc41`, reference seeds0/1 only; CLIP adaptation/Qwen/fusion changes are later decisions.
-- GPU execution starts after current six-run200epoch study, frozen test evaluation and verified final archival complete and all old owners exit. Current study must continue unchanged.
+- Latest2026-10-10user authorization supersedes finish-six-first: intentionally stop predecessor watchdog/controller/worker, preserve checkpoints and test claims, verify stop receipt/all owners exited, then execute CLIP/S² now. Old source/recipe remains unchanged; no predecessor test scoring.
 - Preserve retained worktree `tools/followup/`, `tools/benchmark/`, main `src/`, model snapshots, environments and locks; create new namespace, not refactor live helpers.
 - Reuse current main `.venv`; runtime `PYTHONPATH=<main>/src:<worktree>:<main> LD_LIBRARY_PATH=/usr/lib/wsl/lib HF_HUB_OFFLINE=1 OMP_NUM_THREADS=2 PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=0`.
+  Extraction/tests use existing main-project tools/motion/.venv and `PYTHONPATH=<worktree>`; do not import its libraries into main interpreter.
 - CLIP encoder FP32/frozen/eval/inference, TF32/autocast off; processor at same pinned revision. Export unnormalized final hidden CLS, not projected/pooler features.
 - Scales224/448; upscale already processed224tensor, bicubic `align_corners=False`, `antialias=False`; row-major tiles, mean four CLS vectors, concatenate224then448. Arrays FP32 `[N,2048]`.
 - Official clips7096/519/642; frames827354/55775/64627; total8257clips/947756frames. Preserve full source rows and reuse pinned motion in place.
@@ -176,11 +177,11 @@ PATH --output PATH` emits only dev comparison artifacts.
 
 **Interfaces:**
 - `validate_selections(rows: list[dict]) -> None` accepts exactly reference seeds0/1.
-- `preflight_study(config: dict) -> dict` checks current study completion/frozen test/archive, idle GPU, new package/profile/source identities and remaining storage.
+- `preflight_study(config: dict) -> dict` checks verified intentional predecessor stop (or completed study), all predecessor owners exited, idle GPU, new package/profile/source identities and remaining storage.
 - `run_study(config: dict) -> dict` trains the pair sequentially, freezes dev selections, archives native final payloads, and completes without test scoring.
 - `monitor(config: dict) -> None` owns single lock and1200second observation/recovery loop.
 
-- [ ] **RED:** Assert missing/duplicate/extra arm selections fail; unfinished six-run predecessor, live/orphan/reused owner, source/profile drift and shortage block launch. Manual stop prevents restart; only latest verified transient failure permits bounded recovery.
+- [ ] **RED:** Assert missing/duplicate/extra arm selections fail; unapproved unfinished predecessor, live/orphan/reused owner, source/profile drift and shortage block launch. Verified user-directed predecessor stop permits this separate study, while a manual stop of the new study prevents its restart. Only latest verified transient failure permits bounded recovery.
 - [ ] **RED:** Using a small fixture study, assert two completed selections yield dev-only completion and archive receipts, with no `official-test/claim.json` or test generation calls.
 - [ ] Run `PY -m pytest tools/clip_s2/tests/test_study.py -q`; expect failures before implementation.
 - [ ] Implement explicit pair commands, ownership publication, locks/SIGTERM/manual stop, verified same-root restart (max3), unknown-fault `needs_agent` and dev-only archive completion. Existing `archive_final` requires a test report, so implement new dev-final payload archival rather than bypassing that old guard.
@@ -194,14 +195,14 @@ PATH --output PATH` emits only dev comparison artifacts.
 
 **Interfaces:** `compare_dev(clip_root: Path, dino_root: Path) -> dict` returns per-seed rows, paired changes, two-seed means, actual selected/stopped exposure and provenance notes.
 
-- [ ] **RED:** Test missing seed, wrong arm, mismatched ordered data/recipe/initialization, different decoder/metric signatures and inconsistent selection hash rejection. Assert pair0/1 mean equals arithmetic mean of their differences.
+- [ ] **RED:** Test missing CLIP seed, wrong arm, mismatched ordered data/recipe/initialization, different decoder/metric signatures and inconsistent selection hash rejection. Missing DINOseed1 must be explicitly unpaired, not fabricated; paired mean requires both complete pairs.
 - [ ] Run `PY -m pytest tools/clip_s2/tests/test_report.py -q`; expect feature missing failure.
-- [ ] Implement comparison against completed reference seeds0/1 in `official-phoenix14t-translation-spamo200-v1`, not historical40epoch results. Report BLEU1-4/ROUGE-L, epochs/updates/charged seconds and scientific confounds; read only dev reports for this decision.
+- [ ] Implement comparison against available completed references in `official-phoenix14t-translation-spamo200-v1`, not historical40epoch performance. Predecessor stopped before DINOseed1, so report only existing seed0pair and label seed1unpaired. Report both CLIP results/mean, but no two-seed paired DINO gain until both pairs exist.
 - [ ] Run tests GREEN and publish `comparison-dev.json` plus concise markdown summary. State that new CLIP official test is unscored. Recommend adapted CLIP only as separately designed matched follow-up; no test-guided tuning or automatic next experiment.
 
 ## Final verification and handoff
 
-- [ ] Run `PY -m pytest tools/clip_s2/tests -q -m 'not gpu'` and relevant existing package/translation/checkpoint tests in correct worktree/main-overlay context. Expect zero failures.
+- [x] Run extractor/inventory/package tests plus inherited publisher tests with motion interpreter; run data/training/study/report and relevant inherited translation/checkpoint/followup tests with main interpreter/overlay.51passed in correct environments; real GPU parity/profile smoke runs are explicit CLI checks, not silently skipped pytest markers.
 - [ ] Run all new GPU-marked parity/profile/replay checks after old-study gate. Save evidence, source/processor/model hashes, exact counts and accepted profiles before freezing launch source.
 - [ ] Run `RUFF check tools/clip_s2` and targeted Pyright; expect zero errors. Inspect `git status`, scoped `git diff` and `git diff --check` in main/worktree. No commit.
 - [ ] Perform native final self-review against spec and all five Review Focus cases; address correctness findings with RED→GREEN regressions. Preserve plan-scoped ledger and runbook.
@@ -233,3 +234,23 @@ Interfaces are explicit; each Review Focus case has an owning test task. New
 functional code remains unwritten. Current source/model/data closure was verified
 unchanged during documentation review. User requested save and self-review, not
 implementation or a new launch; execution awaits that later instruction.
+
+## Execution amendment — 2026-10-10
+
+User explicitly approved immediate stop/extract/two-run launch in Build mode.
+This supersedes prior completion prerequisite. Preserve predecessor epoch96
+reference completion (best epoch76) and interrupted fixed-gate resumes. One
+DINO200reference seed is available; do not silently create extra DINO runs or
+claim a two-seed paired performance comparison. Seed1initialization can be
+checked against retained old40epoch common initialization because model weights
+and architecture are identical, but old40epoch scores are not comparison data.
+
+Execution record: source/CLI implementations complete;51targeted tests, Ruff,
+format and both targeted typing contexts passed. Real CLIP/S² parity,24clip
+bounded package and307/307state batch8FLAN joint/reload profile passed. Detached
+controller143082/extractor143107/watchdog143108 launched; full8257extraction is
+in progress, then independent verification/full-data profile/reference0/1
+automatically. At16:13UTC62durable clip receipts; no translation score yet.
+See active runbook and switch receipt; old code/artifacts preserved. Do not edit
+new runtime source while pipeline is live. Task2full publication and actual
+translation completion remain asynchronous pending outcomes, not claimed done.

@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "status": "gpu_work_held_windows_tdr_confirmed_exact_kernel_cause_unresolved",
+  "inspection_started_utc": "2026-10-11T04:22:59Z",
+  "current_wsl_boot_id": "c81d680c-fc38-4494-b0ea-a91e30b524c8",
+  "study_root": "/home/kan/datasets/despamo/official-phoenix14t-translation-clip-s2-spamo200-v3",
+  "containment": {
+    "training_diagnostic_and_watchdog_processes_absent": true,
+    "manual_stop_receipt_published": true,
+    "automatic_recovery_disabled": true,
+    "no_gpu_compute_reproduction_performed_in_this_investigation": true,
+    "checkpoints_features_models_source_and_test_claims_preserved": true,
+    "driver_tdr_registry_and_runtime_packages_modified": false
+  },
+  "windows_findings": {
+    "bugcheck_hex": "0x00000116",
+    "bugcheck_name": "VIDEO_TDR_FAILURE",
+    "meaning": "Windows failed to reset the graphics driver and recover from GPU timeout",
+    "related_driver_reported_by_windows_event_1019": "nvlddmkm.sys",
+    "last_operation_ntstatus": "0xC000009A",
+    "ntstatus_name": "STATUS_INSUFFICIENT_RESOURCES",
+    "ntstatus_does_not_prove_vram_oom": true,
+    "automatic_reboot_enabled": true,
+    "crash_reports": [
+      {
+        "nvidia_error_event_14_utc": "2026-10-11T03:45:11.0601964Z",
+        "bugcheck_report_event_1001_utc": "2026-10-11T03:47:33.1792777Z",
+        "dump": "C:\\WINDOWS\\Minidump\\101126-13859-01.dmp",
+        "associated_activity": "v2 epoch2 dev generation; association supported by saved stage/receipt timestamps"
+      },
+      {
+        "nvidia_error_event_14_utc": "2026-10-11T04:17:15.5196144Z",
+        "bugcheck_report_event_1001_utc": "2026-10-11T04:18:53.7789120Z",
+        "dump": "C:\\WINDOWS\\Minidump\\101126-9468-01.dmp",
+        "associated_activity": "previous full-dev generation diagnostic interrupted by reported host restart"
+      }
+    ],
+    "intervening_cuda_failure": {
+      "nvidia_error_event_14_utc": "2026-10-11T04:08:49.7970033Z",
+      "worker_interrupted_budget_utc": "2026-10-11T04:08:57.418992Z",
+      "stage": "v3 epoch2 dev generation",
+      "first_cuda_error_surface": "Transformers beam scorer next_token.item()",
+      "secondary_error": "restoring CUDA RNG state after primary CUDA failure",
+      "asynchronous_error_surface_is_not_faulting_kernel_proof": true
+    },
+    "minidump_read_permission_denied": true,
+    "windows_debugger_not_found_in_path": true,
+    "tdr_registry_values": {"TdrDelay": null, "TdrDdiDelay": null, "TdrLevel": null}
+  },
+  "affected_stack": {
+    "windows": "10.0.26200.9457",
+    "wsl": "2.7.10.0",
+    "wsl_kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "nvidia_driver": "610.62",
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "torch": "2.0.1+cu117",
+    "compiled_cuda": "11.7",
+    "transformers": "4.32.0",
+    "peft": "0.7.1",
+    "dxg_kernel_warning_observed": "field-spanning memcpy in dxgvmbus.c:3095 while submitting wait to GPU hardware queue; not independently established as BSOD cause"
+  },
+  "confirmed_code_inefficiency": {
+    "training_cache_disable": "tools/followup/model.py:23",
+    "generation_inherits_training_config_without_override": "src/despamo/models/flan_t5.py:153-162",
+    "validation_batch_and_beams": "tools/followup/evaluation.py:41-42; batch4, beam5, effective20 sequences",
+    "cache_disabled_recomputes_decoder_prefix": true,
+    "cpu_probe": "docs/diagnostics/2026-10-11-t5-cache-cpu-probe.py",
+    "cpu_probe_current_decoder_token_positions": 1320,
+    "cpu_probe_cached_decoder_token_positions": 220,
+    "cpu_probe_same_generated_ids": true,
+    "probe_is_tiny_cpu_model_not_full_flan_gpu_stability_validation": true,
+    "cache_disabled_alone_proven_cause_of_tdr": false
+  },
+  "assessment": "Generation workload is strongly temporally associated with NVIDIA driver GPU-timeout/reset failures. Windows BSOD/reset failure explains host restarts. Exact offending GPU kernel/driver defect and possible hardware contribution cannot be identified from Python stack alone. No source-level illegal-index or tensor-mutation cause has been proven. Earlier assertion that transient in-memory model corruption was the established cause was too strong.",
+  "dino_working_counterexample": {
+    "dino_reference_completed_epochs": 96,
+    "dino_and_clip_v3_recipe_equal": true,
+    "decoder_settings_and_inference_exemplar_equal": true,
+    "torch_transformers_peft_versions_equal": true,
+    "frozen_flan_fingerprint_and_base_files_equal": true,
+    "common_mutable_initialization_equal": true,
+    "ordered_split_ids_equal": true,
+    "shared_downstream_source_sha_equal_files": 57,
+    "all_8257_spatial_sequence_shapes_widths_dtypes_equal": true,
+    "encoders_run_during_translation": false,
+    "cache_disable_is_shared_not_differential_cause": true,
+    "exact_windows_driver_state_at_dino_run_recorded": false,
+    "saved_strings_are_not_exact_generation_step_counts": true,
+    "interpretation": "DINO success is real evidence against cache=False or beam5 alone being sufficient cause. Feature values and learned trajectories differ; generation stopping, allocation lifetime, custom runner/guards and host driver state may differ. No particular difference has yet been proven to cause TDR."
+  },
+  "original_spamo_source_comparison": {
+    "checkout": "/home/kan/Research/SpaMo",
+    "history_checked": ["492a24e", "6d7aaf7", "HEAD"],
+    "relevant_source_files_have_no_uncommitted_diff": true,
+    "explicit_use_cache_disable_found": false,
+    "gradient_checkpointing_enable_found": false,
+    "expected_original_t5_inference_cache": true,
+    "cpu_tiny_peft_wrapper_retained_cache_true": true,
+    "cpu_tiny_peft_wrapper_gradient_checkpointing": false,
+    "spatial_frame_cap": 512,
+    "spatial_random_cropping_applies_to_validation_too": true,
+    "motion_sequences_are_not_cropped_by_that_spatial_cap": true,
+    "initial_checked_in_batch_train_and_val": 8,
+    "initial_gradient_accumulation": 2,
+    "current_local_reproduction_batch_train_and_val": 2,
+    "batch_2_is_local_override_not_initial_upstream_default": true,
+    "original_generation": {"num_beams": 5, "max_length": 64, "do_sample": true, "top_p": 0.9},
+    "ours_generation": {"eval_batch": 4, "num_beams": 5, "max_length": 64, "do_sample": false, "use_cache": false},
+    "both_t5_weight_precision": "bfloat16",
+    "original_tokenizer_constructor_max_length_arg": 64,
+    "actual_original_prompt_truncation_limit_in_installed_api": 512,
+    "ours_prompt_limit": 1024,
+    "special_windows_tdr_recovery_code_found": false,
+    "original_sampling_random_eval_crop_and_batch_derived_icl_are_not_safe_unreviewed_protocol_substitutions": true,
+    "no_gpu_original_runner_launched": true
+  },
+  "admin_handoff_prepared": {
+    "access_rechecked_utc": "2026-10-11T06:02:12Z",
+    "current_windows_session_elevated": false,
+    "both_dump_reads_still_permission_denied": true,
+    "windbg_or_sdk_debugger_installed_at_checked_locations": false,
+    "script": "docs/diagnostics/export-gpu-crash-evidence.ps1",
+    "instructions": "docs/diagnostics/gpu-crash-admin-handoff-2026-10-11.md",
+    "destination": "B:\\DeSpaMo\\diagnostics\\gpu-crashes-2026-10-11",
+    "powershell_parser_and_check_only_passed": true,
+    "non_elevated_execution_rejected_before_file_creation": true,
+    "dump_export_or_analysis_completed": false,
+    "gpu_hold_preserved": true
+  },
+  "verified_readable_export": {
+    "checked_utc": "2026-10-11T06:12:37Z",
+    "user_export_completed_utc": "2026-10-11T06:11:05.9470373Z",
+    "folder": "B:\\DeSpaMo\\diagnostics\\gpu-crashes-2026-10-11",
+    "files": [
+      {"name": "101126-13859-01.dmp", "bytes": 6479659, "sha256": "c71bbbb17e54c07040b19c4368c32160c24539b543f1da303af704bcae0cfe07"},
+      {"name": "101126-9468-01.dmp", "bytes": 6324359, "sha256": "1cec95a8a630a8b96a5100aa45de74a6146592ef21f1d0388f18afef69487824"}
+    ],
+    "both_copies_readable_and_hash_size_verified": true,
+    "pagedu64_headers_independently_confirm_bugcheck_116_and_event_parameters": true,
+    "system_events_exported": 26,
+    "windbg_or_cdb_installed": false,
+    "winget_available": true,
+    "symbolicated_dump_analysis_complete": false,
+    "gpu_hold_active": true
+  },
+  "completed_windbg_analysis": {
+    "receipt": "docs/windbg-gpu-crash-analysis-2026-10-11.json",
+    "user_approved_official_debugger_installation": true,
+    "debugger_version": "Microsoft.WinDbg 1.2610.1001.0",
+    "both_valid_symbol_stacks_analyzed": true,
+    "both_failure_buckets": "0x116_IMAGE_nvlddmkm.sys",
+    "both_modules": "nvlddmkm",
+    "both_process_names": "System",
+    "both_driver_owner_offsets": "nvlddmkm+1958210",
+    "reset_stack_matches": true,
+    "specific_cuda_kernel_or_driver_vs_hardware_cause_resolved": false,
+    "driver_runtime_tdr_settings_or_gpu_hold_changed": false
+  },
+  "next_evidence": "Review host NVIDIA/WSL/driver mitigation before permitting bounded cached batch1 GPU validation; both dump analyses confirm reset failure but do not identify the initiating CUDA kernel or prove a fix.",
+  "mitigation_candidates_not_applied": [
+    "separate inference use_cache=True from training gradient-checkpointing use_cache=False; additional KV memory must be measured",
+    "evaluation microbatch1 with same beam5/output64, validate numerical equivalence and memory before prolonged dev scoring",
+    "review supported NVIDIA driver/WSL/runtime stack after minidump analysis, in isolated runtime rather than mutating pinned baseline environment",
+    "batch-level timing, joint length, memory and device-health logging before any later supervised GPU validation"
+  ],
+  "documentation_sources": [
+    "https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/bug-check-0x116---video-tdr-failure",
+    "https://learn.microsoft.com/en-us/windows-hardware/drivers/display/timeout-detection-and-recovery",
+    "https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55",
+    "https://docs.nvidia.com/cuda/wsl-user-guide/index.html"
+  ]
+}
