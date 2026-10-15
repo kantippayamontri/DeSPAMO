@@ -1,0 +1,32 @@
+{
+  "policy": "original-spamo-paper40-released-features-seed0-v1",
+  "run_root": "/home/kan/datasets/despamo/original-spamo-paper40-released-features-seed0-v1",
+  "checkpoint_root": "/mnt/b/DeSpaMo/checkpoints-v1/original-spamo-paper40-released-features-seed0-v1",
+  "control_root": "/home/kan/datasets/despamo/checkpoint-storage-v1",
+  "original_paused_run": "/home/kan/datasets/despamo/official-phoenix14t-translation-clip-s2-spamo200-v3/runs/translation-reference-seed0-fe5c22c66305d9e3bea3074792c0f64955b2c01c4b61bf92656448c0f7ae5671",
+  "author_commit": "aee7f8b6ea8201b710690adcce6f46260dd11bba",
+  "model": {
+    "name": "google/flan-t5-xl", "revision": "7d6315df2c2fb742f0f5b556879d730926ca9001",
+    "cache_dir": "/home/kan/datasets/spamo/hf_cache", "max_text_length": 512,
+    "max_frame_len": 512, "spatial_crop_mode": "full", "spatial_dim": 2048,
+    "motion_dim": 1024, "adapter_dim": 768, "language_dim": 2048,
+    "lora_rank": 16, "lora_alpha": 32, "lora_dropout": 0.1,
+    "prompt": "Translate the given sentence into {}.", "use_in_context": true,
+    "num_in_context": 3, "vt_pooling": "legacy_mean", "vt_weight": 1.0,
+    "warm_up_steps": 4000
+  },
+  "data": {
+    "annotation_root": "/home/kan/Research/SpaMo/preprocess/Phoenix14T",
+    "spatial_root": "/home/kan/datasets/spamo/features/vit_feat_Phoenix14T",
+    "motion_root": "/home/kan/datasets/spamo/features/mae_feat_Phoenix14T",
+    "spatial_manifest": "/home/kan/datasets/spamo/features/manifests/phoenix14t_spatial.json",
+    "motion_manifest": "/home/kan/datasets/spamo/features/manifests/phoenix14t_motion.json",
+    "batch_size": 8, "num_workers": 0
+  },
+  "optimizer": {"learning_rate": 0.0001, "weight_decay": 0.01},
+  "recipe": {"epochs": 40, "batch_size": 8, "accumulation": 2,
+             "vt_warmup_steps": 4000, "lr_warmup_steps": 10000,
+             "peak_lr": 0.0001, "min_lr": 0.00005, "dev_every": 2},
+  "seed": 0,
+  "comparison": {"enabled": true}
+}

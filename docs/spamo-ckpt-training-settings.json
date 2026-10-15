@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "title": "SpaMo released checkpoint training settings (PHOENIX14T)",
+  "source_checkpoint": {
+    "file": "spamo.ckpt",
+    "sha256": "06a432cdd8e1da4ce0b0e4cff246b20ad7d6a60406f32dfdbdfd974f94d3eee6",
+    "pytorch_lightning_version": "1.9.5",
+    "author_repo": "https://github.com/eddie-euijun-hwang/SpaMo",
+    "author_commit_inspected": "aee7f8b6ea8201b710690adcce6f46260dd11bba",
+    "paper": "https://aclanthology.org/2025.naacl-long.197.pdf"
+  },
+  "provenance_legend": {
+    "recorded": "read directly from checkpoint state",
+    "derived": "computed from recorded values; verified exactly against recorded state",
+    "author_code": "not stored in checkpoint; from author configs/finetune.yaml + spamo/t5_slt.py"
+  },
+  "recorded": {
+    "epoch": 95,
+    "global_step_optimizer_updates": 42624,
+    "train_batches_processed_total": 85152,
+    "train_batches_per_epoch": 887,
+    "optimizer": {
+      "type": "AdamW",
+      "initial_lr": 0.0006,
+      "betas": [
+        0.9,
+        0.98
+      ],
+      "eps": 1e-08,
+      "weight_decay": 0.01,
+      "amsgrad": false,
+      "lr_at_save": 0.0005846628034933489
+    },
+    "lr_scheduler": {
+      "type": "LambdaLR (step interval)",
+      "base_lrs": [
+        0.0006
+      ],
+      "last_epoch": 42624,
+      "last_lr": [
+        0.0005846628034933489
+      ]
+    },
+    "early_stopping": {
+      "monitor": "val/bleu4",
+      "mode": "max",
+      "patience": 50,
+      "best_score": 24.926687240600586
+    },
+    "model_checkpoint": {
+      "monitor": "val/bleu4",
+      "mode": "max",
+      "best_model_path": "logs/2025-04-23T08-50-49_finetune/checkpoints/epoch=00095-step=0042624-bleu4=24.93.ckpt"
+    },
+    "model_shapes": {
+      "state_dict_tensors": 871,
+      "trainable_tensors_with_adam_state": 305,
+      "lora_tensors": 288,
+      "adapter": {
+        "logit_scale": [],
+        "spatio_proj.weight": [
+          768,
+          2048
+        ],
+        "spatio_proj.bias": [
+          768
+        ],
+        "spatiotemp_proj.weight": [
+          768,
+          1024
+        ],
+        "spatiotemp_proj.bias": [
+          768
+        ],
+        "fusion_proj.0.weight": [
+          2048,
+          768
+        ],
+        "fusion_proj.0.bias": [
+          2048
+        ],
+        "fusion_proj.2.weight": [
+          2048,
+          2048
+        ],
+        "fusion_proj.2.bias": [
+          2048
+        ],
+        "temporal_encoder.temporal_conv.0.weight": [
+          768,
+          768,
+          5
+        ],
+        "temporal_encoder.temporal_conv.0.bias": [
+          768
+        ],
+        "temporal_encoder.temporal_conv.1.weight": [
+          768
+        ],
+        "temporal_encoder.temporal_conv.1.bias": [
+          768
+        ],
+        "temporal_encoder.temporal_conv.1.running_mean": [
+          768
+        ],
+        "temporal_encoder.temporal_conv.1.running_var": [
+          768
+        ],
+        "temporal_encoder.temporal_conv.1.num_batches_tracked": [],
+        "temporal_encoder.temporal_conv.4.weight": [
+          768,
+          768,
+          5
+        ],
+        "temporal_encoder.temporal_conv.4.bias": [
+          768
+        ],
+        "temporal_encoder.temporal_conv.5.weight": [
+          768
+        ],
+        "temporal_encoder.temporal_conv.5.bias": [
+          768
+        ],
+        "temporal_encoder.temporal_conv.5.running_mean": [
+          768
+        ],
+        "temporal_encoder.temporal_conv.5.running_var": [
+          768
+        ],
+        "temporal_encoder.temporal_conv.5.num_batches_tracked": []
+      }
+    }
+  },
+  "derived": {
+    "physical_batch_size": 8,
+    "physical_batch_size_note": "887 batches per epoch x 8 = 7096 train clips exactly",
+    "gradient_accumulation": 2,
+    "optimizer_updates_per_epoch": 444,
+    "accumulation_note": "42624 updates / 96 epochs = 444 = ceil(887/2)",
+    "lr_schedule": {
+      "name": "transformers.get_cosine_schedule_with_warmup",
+      "peak_lr": 0.0006,
+      "num_training_steps": 222000,
+      "num_warmup_steps": 22200,
+      "warmup_fraction": 0.1,
+      "min_lr": 0.0,
+      "max_epochs": 500,
+      "check": "lr at step 42624 = 0.0005846628034933489 equals recorded last_lr exactly"
+    },
+    "trained_epochs_at_save": 96,
+    "trainable_parameters": "visual adapter (spatial Linear 2048->768, motion Linear 1024->768, TCN K5-P2-K5-P2 with BatchNorm, MLP 768->2048-GELU->2048), logit_scale, FLAN-T5-XL LoRA q/v"
+  },
+  "author_code": {
+    "language_model": {
+      "name": "google/flan-t5-xl",
+      "dtype": "bfloat16",
+      "tuning": "LoRA",
+      "lora_r": 16,
+      "lora_alpha": 32,
+      "lora_dropout": 0.1,
+      "target_modules": [
+        "q",
+        "v"
+      ]
+    },
+    "features": {
+      "spatial": "CLIP ViT-L/14 + S2 scales 224/448, 2048-d (vit_feat_Phoenix14T)",
+      "motion": "VideoMAE-L, 1024-d (mae_feat_Phoenix14T)",
+      "max_frame_len": 512
+    },
+    "warm_up_steps_vt_only": 0,
+    "warm_up_note": "first update (global_step 0) is VT-only, CE+VT from update 2",
+    "combined_loss": true,
+    "vt_weight_alpha": 1.0,
+    "cross_modal_align": true,
+    "vt_pooling": "padded-sequence mean (includes padding)",
+    "logit_scale_init": 2.6592,
+    "prompt": "Translate the given sentence into {}.",
+    "in_context": {
+      "use": true,
+      "num_in_context": 3,
+      "pairs": "en=de, fr=de, es=de of another sample in the same batch (derangement)"
+    },
+    "prompt_tokenizer_truncation": "512 (tokenizer model_max_length; max_txt_len=64 is not applied to prompts)",
+    "gradient_clip_val": 1.0,
+    "precision": "bf16",
+    "seed": 0,
+    "check_val_every_n_epoch": 2,
+    "validation_split_in_author_config": "test (checkpoint selection was on test)",
+    "generation": {
+      "num_beams": 5,
+      "max_length": 64,
+      "do_sample": true,
+      "top_p": 0.9
+    }
+  },
+  "differences_from_paper": {
+    "peak_lr": {
+      "paper": 0.0001,
+      "checkpoint": 0.0006
+    },
+    "lr_warmup": {
+      "paper": "10K steps",
+      "checkpoint": "22200 updates"
+    },
+    "min_lr": {
+      "paper": 5e-05,
+      "checkpoint": 0.0
+    },
+    "epochs": {
+      "paper": 40,
+      "checkpoint": "schedule 500, saved at epoch 95 (96 completed)"
+    },
+    "vt_only_warmup": {
+      "paper": "~4K steps",
+      "checkpoint": "0 (author code)"
+    },
+    "selection": {
+      "paper": "unstated",
+      "checkpoint": "best val/bleu4 on test split"
+    }
+  },
+  "measured_by_us_clean_protocol": {
+    "protocol": "fixed train-only ICL exemplar 12February_2010_Friday_tagesschau-122, batch1, beam5, max64, do_sample False",
+    "dev_519_bleu4": 23.338556169739107,
+    "test_642_bleu4": 25.2655,
+    "test_642_bleu4_author_batch_icl": 25.6646,
+    "paper_reported_test_bleu4": 24.32
+  }
+}
